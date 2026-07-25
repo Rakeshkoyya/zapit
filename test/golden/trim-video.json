@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-ss", "1", "-to", "3", "-i", "{in0}",
+        "-c:v", "libopenh264",
+        "-b:v", "9331k",
+        "-maxrate", "10731k",
+        "-bufsize", "18662k",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "{tmp}/trimmed.mp4"
+      ],
+      "totalUs": 2000000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/trimmed.mp4", "baseName": "video (trimmed)", "ext": "mp4" }]
+}

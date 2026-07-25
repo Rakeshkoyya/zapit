@@ -1,0 +1,36 @@
+# Normalize line endings so the repo stays clean across machines.
+# Text files are stored LF in git and checked out with native endings.
+* text=auto
+
+# Windows-only tooling must keep CRLF in the working tree.
+*.ps1   text eol=crlf
+*.nsh   text eol=crlf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# Source and config: LF everywhere.
+*.rs    text eol=lf
+*.ts    text eol=lf
+*.js    text eol=lf
+*.mjs   text eol=lf
+*.json  text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+*.yml   text eol=lf
+
+# Never touched by line-ending conversion.
+*.png   binary
+*.jpg   binary
+*.ico   binary
+*.icns  binary
+*.svg   text eol=lf
+*.mp4   binary
+*.mkv   binary
+*.mp3   binary
+*.flac  binary
+*.pdf   binary
+*.heic  binary
+*.exe   binary
+*.dll   binary

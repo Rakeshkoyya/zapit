@@ -1,0 +1,25 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-i", "{in0}",
+        "-vf", "fps=15,scale=min(480\\,iw):-2:flags=lanczos,palettegen=stats_mode=diff",
+        "{tmp}/palette.png"
+      ]
+    },
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-i", "{in0}",
+        "-i", "{tmp}/palette.png",
+        "-lavfi", "fps=15,scale=min(480\\,iw):-2:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=4",
+        "{tmp}/out.gif"
+      ],
+      "totalUs": 5024000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/out.gif", "baseName": "video", "ext": "gif" }]
+}

@@ -1,0 +1,11 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": ["-i", "{in0}", "-c", "copy", "-movflags", "+faststart", "{tmp}/remux-0.mp4"],
+      "totalUs": 5024000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/remux-0.mp4", "baseName": "video", "ext": "mp4" }]
+}

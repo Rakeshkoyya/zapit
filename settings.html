@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zapit Settings</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+      }
+      body {
+        margin: 0;
+        padding: 16px 20px 24px;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 13px;
+        margin: 20px 0 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+      }
+      h3 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        opacity: 0.6;
+        margin: 12px 0 4px;
+      }
+      #tagline {
+        margin: 0 0 8px;
+        opacity: 0.7;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 0;
+      }
+      .row em {
+        margin-left: auto;
+        font-size: 11px;
+        opacity: 0.45;
+        font-style: normal;
+      }
+      button {
+        font: inherit;
+        padding: 5px 14px;
+      }
+      #status {
+        min-height: 18px;
+        font-size: 12px;
+        opacity: 0.8;
+        margin-top: 8px;
+      }
+      details {
+        margin-top: 10px;
+      }
+      summary {
+        cursor: pointer;
+      }
+      #licenses {
+        white-space: pre-wrap;
+        font-family: Consolas, "Cascadia Mono", monospace;
+        font-size: 11px;
+        max-height: 220px;
+        overflow: auto;
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 4px;
+        background: color-mix(in srgb, currentColor 8%, transparent);
+      }
+      .hint {
+        font-size: 12px;
+        opacity: 0.65;
+        margin: 4px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Zapit</h1>
+    <p id="tagline">Right-click actions for Windows — offline, private, open source.</p>
+
+    <h2>Right-click menu</h2>
+    <button id="menu-toggle" type="button">Add to right-click menu</button>
+    <p class="hint">
+      Entries appear under <strong>Show more options</strong> in the Windows 11 menu.
+    </p>
+
+    <h2>Where outputs go</h2>
+    <label class="row"
+      ><input type="radio" name="policy" id="policy-sameFolder" /> Next to the source file</label
+    >
+    <label class="row"><input type="radio" name="policy" id="policy-ask" /> Ask each time</label>
+    <label class="row"><input type="radio" name="policy" id="policy-fixed" /> A fixed folder</label>
+
+    <h2>Actions</h2>
+    <p class="hint">Unchecked actions are removed from the menu.</p>
+    <div id="actions"></div>
+
+    <h2>About</h2>
+    <button id="open-logs" type="button">Open log folder</button>
+    <details>
+      <summary>Third-party components &amp; licenses</summary>
+      <div id="licenses"></div>
+    </details>
+
+    <div id="status"></div>
+    <script type="module" src="/src/windows/settings/main.ts"></script>
+  </body>
+</html>

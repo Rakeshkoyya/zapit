@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "kind": "js",
+      "engine": "pdf-split",
+      "params": {
+        "input": "{in0}",
+        "groups": [
+          { "from": 1, "to": 3, "out": "{tmp}/part-0.pdf" },
+          { "from": 7, "to": 7, "out": "{tmp}/part-1.pdf" },
+          { "from": 9, "to": null, "out": "{tmp}/part-2.pdf" }
+        ]
+      }
+    }
+  ],
+  "outputs": [
+    { "from": "{tmp}/part-0.pdf", "baseName": "report (pages 1-3)", "ext": "pdf" },
+    { "from": "{tmp}/part-1.pdf", "baseName": "report (page 7)", "ext": "pdf" },
+    { "from": "{tmp}/part-2.pdf", "baseName": "report (pages 9-end)", "ext": "pdf" }
+  ]
+}

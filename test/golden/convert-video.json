@@ -1,0 +1,11 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": ["-i", "{in0}", "-c", "copy", "-movflags", "+faststart", "{tmp}/conv-0.mp4"],
+      "totalUs": 5024000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/conv-0.mp4", "baseName": "video", "ext": "mp4" }]
+}

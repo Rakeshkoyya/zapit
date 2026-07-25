@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checksum — Zapit</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+      }
+      body {
+        margin: 0;
+        padding: 14px 18px;
+      }
+      #name {
+        margin: 0 0 4px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #algorithm {
+        opacity: 0.7;
+        font-size: 12px;
+      }
+      #hash {
+        display: block;
+        font-family: Consolas, "Cascadia Mono", monospace;
+        font-size: 12px;
+        word-break: break-all;
+        user-select: all;
+        margin: 8px 0 12px;
+        padding: 6px 8px;
+        border-radius: 4px;
+        background: color-mix(in srgb, currentColor 8%, transparent);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      input {
+        font: inherit;
+        flex: 1;
+        padding: 3px 6px;
+      }
+      #verdict {
+        font-size: 12px;
+        margin-top: 8px;
+        min-height: 16px;
+      }
+      #verdict.ok {
+        color: #30a46c;
+      }
+      #verdict.bad {
+        color: #e5484d;
+      }
+      button {
+        font: inherit;
+        padding: 4px 14px;
+      }
+      #buttons {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="name"></p>
+    <span id="algorithm"></span>
+    <code id="hash"></code>
+    <div class="row">
+      <input id="compare" type="text" placeholder="Paste a hash to compare…" />
+      <button id="copy" type="button">Copy</button>
+    </div>
+    <div id="verdict"></div>
+    <div id="buttons">
+      <button id="close" type="button">Close</button>
+    </div>
+    <script type="module" src="/src/windows/result/main.ts"></script>
+  </body>
+</html>

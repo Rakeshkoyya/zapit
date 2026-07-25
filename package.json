@@ -1,0 +1,40 @@
+{
+  "name": "zapit",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Right-click any file on Windows and instantly do the obvious thing with it. Offline, private, open source.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.8.0",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-cli": "^2.4.1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
+    "@tauri-apps/plugin-dialog": "^2.7.2",
+    "@tauri-apps/plugin-notification": "^2.3.3",
+    "@tauri-apps/plugin-opener": "^2.5.4",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "pdf-lib": "^1.17.1"
+  }
+}

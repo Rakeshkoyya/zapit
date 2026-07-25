@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extract frame — Zapit</title>
+    <meta name="prompt-option" content="at" />
+    <meta name="prompt-label" content="Time in seconds" />
+    <meta name="prompt-placeholder" content="10" />
+    <meta name="prompt-presets" content="1,5,10,30,60" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+      }
+      body {
+        margin: 0;
+        padding: 14px 18px;
+        user-select: none;
+      }
+      #name {
+        margin: 0 0 10px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #label {
+        display: block;
+        margin-bottom: 6px;
+      }
+      input {
+        font: inherit;
+        width: 110px;
+        padding: 3px 6px;
+      }
+      #presets {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-left: 10px;
+      }
+      #presets button,
+      #buttons button {
+        font: inherit;
+        padding: 3px 12px;
+      }
+      #buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="name"></p>
+    <label id="label" for="value"></label>
+    <input id="value" type="text" inputmode="decimal" />
+    <span id="presets"></span>
+    <div id="buttons">
+      <button id="cancel" type="button">Cancel</button>
+      <button id="go" type="button">Extract</button>
+    </div>
+    <script type="module" src="/src/windows/prompt/main.ts"></script>
+  </body>
+</html>

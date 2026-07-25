@@ -1,0 +1,12 @@
+{
+  "steps": [
+    {
+      "kind": "size-search",
+      "input": "{in0}",
+      "out": "{tmp}/sized-0.jpg",
+      "targetKb": 50,
+      "format": "jpeg"
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/sized-0.jpg", "baseName": "photo (50KB)", "ext": "jpg" }]
+}

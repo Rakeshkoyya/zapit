@@ -1,0 +1,10 @@
+{
+  "steps": [
+    { "kind": "copy", "from": "{in0}", "to": "{tmp}/noop-0" },
+    { "kind": "copy", "from": "{in1}", "to": "{tmp}/noop-1" }
+  ],
+  "outputs": [
+    { "from": "{tmp}/noop-0", "baseName": "मेरा वीडियो (final) 2 (copy)", "ext": "mp4" },
+    { "from": "{tmp}/noop-1", "baseName": "data (copy)", "ext": "bin" }
+  ]
+}

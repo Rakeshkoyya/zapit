@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Zapit",
+  "version": "0.1.0",
+  "identifier": "dev.zapit.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "plugins": {
+    "cli": {
+      "description": "Zapit — right-click file actions for Windows",
+      "args": []
+    }
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Zapit",
+        "visible": false,
+        "width": 480,
+        "height": 320,
+        "resizable": false,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' blob: data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "resources": {
+      "sidecars/*": "sidecars/"
+    },
+    "shortDescription": "Right-click file actions for Windows",
+    "longDescription": "Right-click any file and instantly do the obvious thing with it: extract audio, compress video or images to a target size, convert HEIC, merge and split PDFs. Fully offline, no accounts, no telemetry.",
+    "licenseFile": "../LICENSE",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "nsis/hooks.nsh"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": ["-ss", "0.5", "-to", "1.5", "-i", "{in0}", "-c", "copy", "{tmp}/trimmed.mp3"],
+      "totalUs": 1000000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/trimmed.mp3", "baseName": "tone (trimmed)", "ext": "mp3" }]
+}

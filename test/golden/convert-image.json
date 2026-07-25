@@ -1,0 +1,10 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": ["-i", "{in0}", "-vf", "format=rgb24", "-q:v", "2", "{tmp}/img-0.jpg"]
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/img-0.jpg", "baseName": "photo", "ext": "jpg" }]
+}

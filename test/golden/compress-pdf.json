@@ -1,0 +1,6 @@
+{
+  "steps": [
+    { "kind": "pdf-compress", "input": "{in0}", "out": "{tmp}/small-0.pdf", "targetKb": 1000 }
+  ],
+  "outputs": [{ "from": "{tmp}/small-0.pdf", "baseName": "report (1000KB)", "ext": "pdf" }]
+}

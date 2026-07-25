@@ -1,0 +1,10 @@
+{
+  "steps": [
+    {
+      "kind": "js",
+      "engine": "pdf-merge",
+      "params": { "inputs": ["{in1}", "{in0}"], "out": "{tmp}/merged.pdf" }
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/merged.pdf", "baseName": "b (merged)", "ext": "pdf" }]
+}

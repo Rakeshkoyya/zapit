@@ -1,0 +1,10 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "magick",
+      "args": ["{in0}", "-auto-orient", "-quality", "92", "{tmp}/heic-0.jpg"]
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/heic-0.jpg", "baseName": "IMG_0042", "ext": "jpg" }]
+}

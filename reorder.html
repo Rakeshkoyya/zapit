@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order files — Zapit</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+      }
+      body {
+        margin: 0;
+        padding: 14px 18px;
+        user-select: none;
+      }
+      h1 {
+        font-size: 13px;
+        margin: 0 0 10px;
+      }
+      #list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+        border-radius: 4px;
+      }
+      #list li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+      }
+      #list li:last-child {
+        border-bottom: none;
+      }
+      .name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      button {
+        font: inherit;
+        padding: 2px 8px;
+      }
+      #buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      #buttons button {
+        padding: 4px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Merge in this order:</h1>
+    <ul id="list"></ul>
+    <div id="buttons">
+      <button id="cancel" type="button">Cancel</button>
+      <button id="go" type="button">Merge</button>
+    </div>
+    <script type="module" src="/src/windows/reorder/main.ts"></script>
+  </body>
+</html>

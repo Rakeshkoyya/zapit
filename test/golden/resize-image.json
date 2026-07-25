@@ -1,0 +1,17 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "magick",
+      "args": [
+        "{in0}",
+        "-auto-orient",
+        "-resize", "276x354!",
+        "-density", "200",
+        "-units", "pixelsperinch",
+        "{tmp}/resized-0.jpg"
+      ]
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/resized-0.jpg", "baseName": "photo (resized)", "ext": "jpg" }]
+}

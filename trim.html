@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trim — Zapit</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+      }
+      body {
+        margin: 0;
+        padding: 14px 18px;
+        user-select: none;
+      }
+      #name {
+        margin: 0 0 12px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      label {
+        width: 42px;
+      }
+      input[type="text"] {
+        font: inherit;
+        width: 90px;
+        padding: 3px 6px;
+      }
+      #hint,
+      #error {
+        font-size: 12px;
+        opacity: 0.8;
+        margin: 0 0 10px;
+      }
+      #error {
+        color: #e5484d;
+        opacity: 1;
+      }
+      #buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      button {
+        font: inherit;
+        padding: 4px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="name"></p>
+    <div class="row">
+      <label for="start">Start</label>
+      <input id="start" type="text" placeholder="0:00" />
+      <label for="end" style="width: auto">End</label>
+      <input id="end" type="text" placeholder="0:30" />
+    </div>
+    <div class="row">
+      <input id="lossless" type="checkbox" />
+      <label for="lossless" style="width: auto">Lossless (cuts at the nearest keyframe)</label>
+    </div>
+    <p id="hint"></p>
+    <p id="error" hidden></p>
+    <div id="buttons">
+      <button id="cancel" type="button">Cancel</button>
+      <button id="go" type="button">Trim</button>
+    </div>
+    <script type="module" src="/src/windows/trim/main.ts"></script>
+  </body>
+</html>

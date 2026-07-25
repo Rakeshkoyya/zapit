@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Metadata — Zapit</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+      }
+      body {
+        margin: 0;
+        padding: 14px 18px;
+      }
+      #name {
+        margin: 0 0 10px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #wrap {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+        border-radius: 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      td {
+        padding: 3px 8px;
+        vertical-align: top;
+        border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+      }
+      td:first-child {
+        width: 40%;
+        opacity: 0.75;
+      }
+      tr.sensitive td {
+        color: #e5484d;
+        font-weight: 600;
+      }
+      #empty {
+        opacity: 0.7;
+        padding: 10px;
+      }
+      #buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      button {
+        font: inherit;
+        padding: 4px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="name"></p>
+    <div id="wrap">
+      <p id="empty" hidden>No EXIF metadata found in this file.</p>
+      <table>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="buttons">
+      <button id="close" type="button">Close</button>
+      <button id="strip" type="button">Remove all metadata</button>
+    </div>
+    <script type="module" src="/src/windows/metadata/main.ts"></script>
+  </body>
+</html>

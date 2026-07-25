@@ -1,0 +1,11 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": ["-i", "{in0}", "-vn", "-c:a", "pcm_s16le", "{tmp}/audio-0.wav"],
+      "totalUs": 2000000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/audio-0.wav", "baseName": "tone", "ext": "wav" }]
+}
