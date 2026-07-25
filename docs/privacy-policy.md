@@ -57,7 +57,7 @@ at the top will be revised.
 
 ## Contact
 
-Questions about this policy or about Zapit: **REPLACE-WITH-YOUR-EMAIL**
+Questions about this policy or about Zapit: **rakeshkoyya2024@gmail.com**
 
 You can also open an issue at
 [github.com/rakeshkoyya/zapit/issues](https://github.com/rakeshkoyya/zapit/issues).

@@ -2,98 +2,144 @@
 
 Everything here is free. No code-signing certificate, no store fees.
 
-## Before the first push
+The current release is **v0.1.0**. The version appears in three files that must always
+agree — `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` — and it
+becomes the installer's filename.
 
-1. **Fill in the placeholders** in `docs/privacy-policy.md`:
-   `REPLACE-WITH-YOUR-USERNAME` (3 places) and `REPLACE-WITH-YOUR-EMAIL`.
-2. **Set the version.** It is `0.1.0` in three files that must agree:
-   `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`.
-   Use `1.0.0` for the first public release.
-3. **Run the clean-machine pass** in `docs/TEST_MATRIX.md`. This is the one gate that
-   cannot be automated from the dev box.
-
-## Push the code
+## 1. Pre-flight
 
 ```powershell
-git add -A
-git commit -m "feat: Zapit v1.0.0"
-git branch -M main
-git remote add origin https://github.com/<you>/zapit.git
-git push -u origin main
+powershell -ExecutionPolicy Bypass -File scripts/check.ps1        # must be green
+powershell -ExecutionPolicy Bypass -File scripts/smoke.ps1        # must be green
+powershell -ExecutionPolicy Bypass -File scripts/test-presets.ps1 # every menu entry
 ```
 
-Then in the repo's **Settings → Pages**: source *Deploy from a branch*, branch `main`,
-folder `/docs`. Your privacy policy becomes
-`https://<you>.github.io/zapit/privacy-policy`.
+Also confirm `docs/privacy-policy.md` has no `REPLACE-WITH-` placeholders left, and that
+the clean-machine checklist in `docs/TEST_MATRIX.md` has been run.
 
-## Cut a release
-
-Build a fresh installer and publish it:
+## 2. Build the installer
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check.ps1
+# Clear the cached icon resource — Cargo does not treat icon.ico as a build
+# input, so a plain rebuild can re-link the previous icon (see ARCHITECTURE.md).
+Get-ChildItem src-tauri\target\release\build -Directory |
+  Where-Object { $_.Name -match '^zapit-' } | Remove-Item -Recurse -Force
+
 npm run tauri build
 ```
 
-The installer lands at
-`src-tauri/target/release/bundle/nsis/Zapit_<version>_x64-setup.exe`.
+Output: `src-tauri/target/release/bundle/nsis/Zapit_<version>_x64-setup.exe`
 
-Publish a checksum with it so people can verify the download — Zapit can compute its own:
-
-```powershell
-Get-FileHash src-tauri\target\release\bundle\nsis\Zapit_1.0.0_x64-setup.exe -Algorithm SHA256
-```
-
-Then:
+Get the checksum to publish alongside it:
 
 ```powershell
-git tag -a v1.0.0 -m "Zapit v1.0.0"
-git push origin v1.0.0
+Get-FileHash src-tauri\target\release\bundle\nsis\Zapit_0.1.0_x64-setup.exe -Algorithm SHA256
 ```
 
-On GitHub: **Releases → Draft a new release → choose tag `v1.0.0`**, attach the
-`-setup.exe`, and paste the SHA-256 into the notes. Publish.
+## 3. Tag the release
 
-### Release notes worth including
+```powershell
+git tag -a v0.1.0 -m "Zapit v0.1.0 - first public release"
+git push origin v0.1.0
+```
 
-- What it does, in two lines.
-- **The SmartScreen warning.** The build is unsigned, so Windows shows
-  "Windows protected your PC" on first run. Tell people to click **More info → Run
-  anyway**, and give them the SHA-256 so they can verify what they downloaded. Hiding
-  this costs you trust; explaining it earns it.
-- That it installs per-user, needs no admin rights, and uninstalls cleanly.
+A tag is just a pointer; it does **not** create a release or upload anything. That is the
+next step.
 
-## Reach more people, still free: WinGet
+## 4. Publish the release
 
-Microsoft's own package manager takes community submissions with **no signing requirement
-and no fee**, and your GitHub release is a valid download source. After publishing a
-release:
+The installer is ~84 MB, which is why it is not in git — GitHub Releases hosts binaries,
+the repository hosts source.
 
-1. Install the manifest tool: `winget install wingetcreate`
-2. Generate and submit:
-   ```powershell
-   wingetcreate new https://github.com/<you>/zapit/releases/download/v1.0.0/Zapit_1.0.0_x64-setup.exe
-   ```
-   It walks you through the metadata, validates the manifest, and opens a pull request
-   against `microsoft/winget-pkgs` for you.
-3. Once merged, anyone can run `winget install Zapit`.
+### Option A — GitHub website (no extra tools)
 
-Updates are one `wingetcreate update` per release.
+1. Go to `https://github.com/<you>/zapit/releases/new`
+2. **Choose a tag** → pick the existing `v0.1.0`
+3. **Release title**: `Zapit v0.1.0`
+4. Paste the release notes (template below)
+5. Drag `Zapit_0.1.0_x64-setup.exe` into the attachments box and wait for the upload bar
+   to finish
+6. Tick **Set as a pre-release** if you want early testers only; leave it unticked for a
+   public release
+7. **Publish release**
 
-## Automating builds (optional)
+### Option B — command line
 
-GitHub Actions is free for public repositories. A workflow triggered on `v*` tags can run
-`npm run tauri build` on a `windows-latest` runner and attach the installer to the release,
-so cutting a version becomes a single `git push origin v1.1.0`. The sidecars are fetched by
-`scripts/fetch-sidecars.ps1`, so the runner needs no extra setup beyond Node and Rust.
+Install GitHub CLI once:
 
-## What is deliberately not here
+```powershell
+winget install --id GitHub.cli
+```
 
-**Microsoft Store.** It needs either a paid code-signing certificate (EXE/MSI submissions
-must be signed) or an MSIX package. MSIX is worse than merely expensive: it virtualizes
-registry writes, so Zapit's context menu — which lives in `HKCU\Software\Classes` — would
-silently not appear. Making it work under MSIX means writing a signed COM shell extension,
-which `GOALS.md` lists as a non-goal for v1.
+Restart the terminal, authenticate, then create the release and upload in one command:
 
-If you later want to remove the SmartScreen warning, **Azure Trusted Signing** is about
-$10/month and is the cheapest route to a signed installer.
+```powershell
+gh auth login
+gh release create v0.1.0 `
+  "src-tauri\target\release\bundle\nsis\Zapit_0.1.0_x64-setup.exe" `
+  --title "Zapit v0.1.0" `
+  --notes-file docs\release-notes-v0.1.0.md
+```
+
+Use `--prerelease` to mark it as a pre-release.
+
+## Release notes template
+
+```markdown
+Right-click any file on Windows 11 and instantly do the obvious thing with it — compress a
+video to a size limit, squeeze a photo to an exact KB target, convert HEIC, merge or split
+PDFs, extract audio. Fully offline: no uploads, no accounts, no telemetry.
+
+### Install
+Download `Zapit_0.1.0_x64-setup.exe` below and run it. It installs for your user only, needs
+no admin rights, and adds itself to the right-click menu (under **Show more options**).
+
+### Heads-up: SmartScreen warning
+This build is not code-signed, so Windows will show "Windows protected your PC" the first
+time you run it. Click **More info** then **Run anyway**. You can verify you got exactly
+what was published:
+
+SHA-256: `<paste the hash here>`
+
+```powershell
+Get-FileHash Zapit_0.1.0_x64-setup.exe -Algorithm SHA256
+```
+
+Or build it yourself from source — the instructions are in the README.
+
+### Uninstall
+Settings → Apps → Zapit, or run the uninstaller in the install folder. It removes the app
+and every registry key it created.
+```
+
+## After the release: WinGet (free, wider reach)
+
+Microsoft's package manager accepts community submissions with **no signing requirement and
+no fee**, and your GitHub release is a valid download source:
+
+```powershell
+winget install wingetcreate
+wingetcreate new https://github.com/<you>/zapit/releases/download/v0.1.0/Zapit_0.1.0_x64-setup.exe
+```
+
+It collects the metadata, validates the manifest and opens a pull request against
+`microsoft/winget-pkgs`. Once merged, anyone can run `winget install Zapit`. Later releases
+are one `wingetcreate update` each.
+
+## Automating it later (optional)
+
+GitHub Actions is free for public repositories. A workflow on `v*` tags can run
+`npm run tauri build` on a `windows-latest` runner and attach the installer automatically,
+reducing a release to `git push origin v0.2.0`. The runner needs Node and Rust; the sidecars
+come from `scripts/fetch-sidecars.ps1`.
+
+## Not doing: Microsoft Store
+
+It requires either a paid code-signing certificate (EXE/MSI submissions must be signed) or
+an MSIX package. MSIX is worse than merely expensive: it virtualizes registry writes, so
+Zapit's context menu — which lives in `HKCU\Software\Classes` — would silently not appear.
+Supporting it means writing a signed COM shell extension, which `GOALS.md` lists as a
+non-goal for v1.
+
+To remove the SmartScreen warning later, **Azure Trusted Signing** (~$10/month) is the
+cheapest route to a signed installer.
