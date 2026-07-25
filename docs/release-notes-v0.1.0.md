@@ -34,7 +34,7 @@ time you run it. Click **More info** → **Run anyway**.
 
 You can verify you got exactly what was published:
 
-SHA-256: `168c1a9986ede905d52c0d470f11a1c61a83af0166d8b8db5c3576ddc50b0c66`
+SHA-256: `20799901d65308f8fc9470a732020fdb5fc239366494a8c9538fb1e48897ea5b`
 
 ```powershell
 Get-FileHash Zapit_0.1.0_x64-setup.exe -Algorithm SHA256
