@@ -78,8 +78,18 @@ export function findAction(id: string): QuickAction | undefined {
   return actions.find((a) => a.id === id);
 }
 
-/** Actions eligible for the context menu: `noop` is a test canary, never shown. */
-export const menuableActions: readonly QuickAction[] = actions.filter((a) => a.id !== "noop");
+/**
+ * Actions eligible for the context menu.
+ * - `noop` is a test canary, never shown.
+ * - `images-to-pdf` is reachable as "Convert to ▸ PDF", which is where people
+ *   look for it; a second top-level entry for the same thing is just clutter.
+ *   It stays registered so scripts and tests can still invoke it by id.
+ */
+const HIDDEN_FROM_MENU = ["noop", "images-to-pdf"];
+
+export const menuableActions: readonly QuickAction[] = actions.filter(
+  (a) => !HIDDEN_FROM_MENU.includes(a.id),
+);
 
 export function findMenuActions(disabled: readonly string[]): readonly QuickAction[] {
   return menuableActions.filter((a) => !disabled.includes(a.id));

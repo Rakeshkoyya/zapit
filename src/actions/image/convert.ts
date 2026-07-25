@@ -1,5 +1,6 @@
 import { splitName, type QuickAction } from "../../core/action";
 import { PlanError } from "../../core/planError";
+import { imagesToPdf } from "./extended";
 import type { EnginePlan, OutputSpec, PlanStep } from "../../core/plan";
 
 /**
@@ -22,10 +23,17 @@ export const convertImage: QuickAction = {
     { label: "PNG", options: { target: "png" } },
     { label: "JPG", options: { target: "jpg" } },
     { label: "WebP", options: { target: "webp" } },
+    { label: "PDF", options: { target: "pdf" } },
     { label: "ICO (icon)", options: { target: "ico" } },
   ],
   buildPlan(inputs, opts): EnginePlan {
     const raw = opts.target ?? "png";
+    // "Convert this image to PDF" is what people look for, so PDF lives in this
+    // submenu with the other formats and hands off to the images→PDF builder
+    // (which also handles page ordering for a multi-file selection).
+    if (raw === "pdf") {
+      return imagesToPdf.buildPlan(inputs, opts);
+    }
     if (!["png", "jpg", "webp", "ico"].includes(raw)) {
       throw new PlanError(`Unknown image format "${raw}".`);
     }

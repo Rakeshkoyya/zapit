@@ -159,6 +159,13 @@ describe("A3-A5", () => {
 });
 
 describe("I5-I7", () => {
+  it("I1 'Convert to > PDF' reaches the images-to-pdf builder", () => {
+    // The discoverable path: people look for PDF among the other formats.
+    const plan = convertImage.buildPlan([PHOTO], { target: "pdf" });
+    expect(plan.outputs[0]?.ext).toBe("pdf");
+    expect(plan.steps.at(-1)?.kind).toBe("js");
+  });
+
   it("I5 flattens each image then builds one PDF", () => {
     const plan = imagesToPdf.buildPlan([PHOTO, file("C:\\i\\b.png")], { ordered: "true" });
     expect(plan.steps.filter((s) => s.kind === "sidecar")).toHaveLength(2);
