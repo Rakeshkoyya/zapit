@@ -4,7 +4,15 @@
 > Nothing gets built that isn't listed here; nothing listed as Core ships broken.
 > Changes require editing this file *first*, in its own commit, with a reason.
 
-Last updated: 2026-07-25
+Last updated: 2026-08-13
+
+> **v1.2 amendment (2026-08-13):** **V6/A2 Trim grows a real timeline window.** The original
+> "mini window: start/end" shipped as two text boxes — you typed timestamps blind, and got
+> exactly one cut per run. Every tool this action is meant to replace (online audio cutters,
+> video trimmers) shows you the media while you cut it, so the window now has a preview
+> player, a filmstrip + waveform timeline, drag-placed cut regions, **multiple cuts per file**,
+> a Keep/Remove toggle, and a merge-or-export-separately choice. Still one action, still one
+> window, still offline. See `docs/adr/005-multi-segment-trim-window.md`.
 
 > **v1.1 amendment (2026-07-25):** The **Pro edition is parked indefinitely** and the project is
 > now **open source (MIT)**. v1 ships the Free edition only. All Pro sections below are retained
@@ -61,7 +69,7 @@ Input extensions: mp4, mkv, mov, avi, webm, wmv, flv, ts, m4v, mts, 3gp (+ gif f
 | V3 | Compress video… | Target size (10/25/50 MB/custom — Discord/WhatsApp) or quality presets; two-pass encode | **Core** |
 | V4 | Convert to… | MP4 / MKV / WebM / MOV submenu | **Core** |
 | V5 | Video → GIF | Two-pass palettegen for good colors and sane size | **Core** |
-| V6 | Trim… | Mini window: start/end; precise re-encode by default, lossless keyframe-cut option | **Core** |
+| V6 | Trim… | Timeline window: preview player, drag cut regions, multiple cuts per file, merge or export each clip; precise re-encode by default, lossless keyframe-cut option | **Core** |
 | V7 | Merge videos | Multi-select → concat; lossless when codecs match, re-encode otherwise | Extended |
 | V8 | Mute video | Strip audio track, no re-encode | Extended |
 | V9 | Extract frame / contact sheet | PNG frame at a timestamp; or a tiled thumbnail-overview image | Extended |
@@ -78,7 +86,7 @@ Input extensions: mp3, wav, flac, m4a, aac, ogg, opus, wma
 | # | Action | Description | Tier |
 |---|--------|-------------|------|
 | A1 | Convert to… | MP3 / WAV / FLAC / M4A / OGG | **Core** |
-| A2 | Trim… | Shares the trim window with video ("online audio cutter" replacement) | **Core** |
+| A2 | Trim… | Shares the timeline window with video, waveform instead of filmstrip ("online audio cutter" replacement) | **Core** |
 | A3 | Normalize loudness | Two-pass EBU R128 loudnorm | Extended |
 | A4 | Merge audio | Multi-select → one file | Extended |
 | A5 | Boost volume | 1.5× / 2× | Extended |

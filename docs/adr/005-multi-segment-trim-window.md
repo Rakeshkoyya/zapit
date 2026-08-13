@@ -1,0 +1,82 @@
+# ADR 005 — Trim becomes a multi-segment timeline window
+
+Date: 2026-08-13 · Status: accepted
+
+## Context
+
+V6/A2 shipped as `GOALS.md` specified: a "mini window" with a start box, an end box and a
+lossless checkbox. It works, but it is the only Core action where the user cannot see what
+they are operating on. Every tool this action exists to replace — online audio cutters,
+browser video trimmers — puts the media on screen and lets you drag the cut. Typing
+`1:32.5` into a text box and hoping is not a replacement for that.
+
+Two limits followed from the same design: one cut per invocation, and no way to preview the
+result before committing to a re-encode. Removing three ad breaks from a recording meant
+running the action three times and then running Merge videos over the pieces.
+
+## Decision
+
+The Trim window becomes a timeline editor. `GOALS.md` V6/A2 were amended first (v1.2
+amendment, separate commit) as CLAUDE.md requires.
+
+### 1. Segments are the wire format; "remove" never crosses the boundary
+
+Options gain `segments` (`"1.5-3.2,10-12.75"`, seconds, keep-regions) and `mode`
+(`merge` | `separate`). The Keep/Remove toggle is resolved **inside the window** —
+Remove-mode regions are inverted against the duration before submit — so `buildPlan`
+sees exactly one meaning and stays pure. Legacy `start`/`end` remain accepted, which keeps
+`smoke`, `--opt`, and the existing golden plans working unchanged.
+
+A single segment in merge mode emits byte-identical output to the old plan, so
+`test/golden/trim-video.json` and `trim-audio.json` are untouched regression anchors.
+
+### 2. Cut-then-concat, not one filter_complex pass
+
+N segments become N `-ss/-to` cut steps plus a `write-text` list and a concat-demuxer step —
+the same pair `mergeVideos` already uses. The alternative (`trim`/`atrim` + `concat` filter in
+a single pass) is frame-accurate too, but it decodes the entire source once no matter where
+the cuts are; fast-seeking each segment is dramatically quicker on a long file with short
+cuts. Segments share one source and one encoder setting, so the demuxer's "identical
+parameters" precondition holds in both lossless and re-encode mode.
+
+The concat list uses **bare relative filenames** (`file 'seg-0.mp4'`), which the demuxer
+resolves against the list file's own directory. `mergeVideos` writes `{tmp}/…` tokens and
+escapes quotes on the *token* — but Rust substitutes the real path afterwards, so a `%TEMP%`
+path containing an apostrophe would break it. Relative names sidestep the problem entirely.
+
+### 3. Playback via the asset protocol, previews built on demand
+
+`app.security.assetProtocol.enable` is turned on with an **empty static scope**; the file
+under edit is allowed individually at window-open time via `asset_protocol_scope().allow_file`.
+The CSP is widened by hand (Tauri does not auto-patch it for `asset:`) to permit
+`asset: http://asset.localhost` in `media-src` and `img-src`.
+
+WebView2 decodes mp4/m4v/mov/webm and mp3/m4a/wav/ogg/opus, but not mkv, avi, wmv, flv, ts,
+mts, 3gp or wma. Rather than a codec table that will drift, the window simply *tries* to play
+the source and listens for the `error` event. On failure it offers a **Build preview** button
+that transcodes a 360p/24fps proxy with progress and cancel. Editing works without it — the
+filmstrip and waveform are still there — so the wait is opt-in and never blocks a cut.
+
+Always building a proxy was rejected: it would tax the common mp4/mp3 case, which plays
+natively and instantly, to smooth over the rare one.
+
+### 4. Timeline pre-passes
+
+Two cheap FFmpeg passes on window open: a 40-tile filmstrip (`fps=40/duration,scale,tile=40x1`,
+the contact-sheet trick from V9) for video, and a `showwavespic` PNG for anything with audio.
+Fixed tile count means the cost does not grow with duration. Both land in
+`%TEMP%\zapit\preview-*`, which the existing `sweep_stale_temp` already collects.
+
+## Consequences
+
+- Trim is now the most complex window in the app. It is split into `timeline.ts`, `player.ts`
+  and `preview.ts` so no file exceeds the §12 size bar; `main.ts` is wiring only.
+- `gather_options` gained a per-window size table — 420×240 non-resizable was fine for a
+  prompt, not for a player. Other windows keep the old default.
+- The asset protocol is enabled process-wide. The static scope stays empty and allowances are
+  per-file, so this does not become a general filesystem read primitive for the webview.
+- Lossless + multiple segments stitches keyframe-aligned pieces, which can show timestamp
+  seams. Precise re-encode remains the default and the lossless checkbox says "approximate".
+- `Cargo.toml` pins the `protocol-asset` feature explicitly even though enabling it in
+  `tauri.conf.json` selects it automatically — the dependency should be readable without
+  cross-referencing the config.
