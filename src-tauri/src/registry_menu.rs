@@ -26,6 +26,46 @@ const VERB: &str = "Zapit";
 /// appeared. Display text comes from MUIVerb, so both still read "Zapit".
 const VERB_ANY: &str = "ZapitAnyFile";
 const MENU_LABEL: &str = "Zapit";
+/// Menu items live in their own classes, not in the file class.
+///
+/// Explorer only honours about **16 static verbs per file class**, and a preset
+/// is a verb: `.mp4` alone registered 34 (11 entries + 23 preset children), so
+/// the flyout silently stopped after "Video → GIF" and Trim, Merge, Mute,
+/// Extract frame, Downscale and Checksum never rendered. `ExtendedSubCommandsKey`
+/// points the verb at a separate class whose own verbs do not count against the
+/// file class — the same mechanism Windows uses for its large cascading menus.
+const MENU_CLASS_PREFIX: &str = "Zapit.Menu";
+
+/// Class holding one extension's items, e.g. `Zapit.Menu.mp4`.
+fn menu_class(extension: &str) -> String {
+    if extension.is_empty() {
+        format!("{MENU_CLASS_PREFIX}.AnyFile")
+    } else {
+        format!("{MENU_CLASS_PREFIX}.{extension}")
+    }
+}
+
+fn menu_class_path(class: &str) -> String {
+    format!(r"{CLASSES}\{class}")
+}
+
+/// Our menu classes are wholly ours, so a wholesale sweep is safe and keeps
+/// install idempotent.
+fn remove_menu_classes() {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let Ok(classes) = hkcu.open_subkey_with_flags(CLASSES, KEY_READ) else {
+        return;
+    };
+    let ours: Vec<String> = classes
+        .enum_keys()
+        .flatten()
+        .filter(|name| name.starts_with(MENU_CLASS_PREFIX))
+        .collect();
+    drop(classes);
+    for name in ours {
+        let _ = hkcu.delete_subkey_all(menu_class_path(&name));
+    }
+}
 
 /// One entry inside an action's flyout; `options` become `--opt k=v` on the
 /// command line, so choosing a preset never opens a window (§7.3).
@@ -104,6 +144,7 @@ fn parent_chain(extension: &str) -> Vec<String> {
 pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
     uninstall_internal(&collect_extensions(actions))?;
     remove_legacy_star_verb();
+    remove_menu_classes();
 
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let exe_str = exe.to_string_lossy().into_owned();
@@ -142,15 +183,18 @@ pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
             .map_err(|e| AppError::system(format!("could not write the menu entry: {e}")))?;
         parent.set_value("MUIVerb", &MENU_LABEL)?;
         parent.set_value("Icon", &exe_str)?;
-        // Present-but-empty: makes Windows read children from our shell subkey.
-        parent.set_value("SubCommands", &"")?;
+        // One verb in the file class, pointing at a class that holds the items:
+        // anything more hits Explorer's ~16-verb-per-class ceiling and the tail
+        // of the menu silently disappears.
+        let class = menu_class(&extension);
+        parent.set_value("ExtendedSubCommandsKey", &class)?;
 
         for (order, action) in relevant {
             // Numeric prefix controls display order; the id after it must match
             // QuickAction.id (dispatch parses the verb name).
             let key_name = format!("{:03}_{}", (order + 1) * 10, action.id);
-            let (item, _) = parent
-                .create_subkey(format!(r"shell\{key_name}"))
+            let (item, _) = hkcu
+                .create_subkey(format!(r"{}\shell\{key_name}", menu_class_path(&class)))
                 .map_err(|e| AppError::system(format!("could not write a menu item: {e}")))?;
             item.set_value("MUIVerb", &action.menu_label)?;
             if action.multi_file != "single" {
@@ -164,13 +208,17 @@ pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
                 continue;
             }
 
-            // Nested flyout: the entry itself gets SubCommands="" and its own
-            // shell subkey, exactly like the top-level Zapit verb.
-            item.set_value("SubCommands", &"")?;
+            // Nested flyout gets its own class for the same reason — presets
+            // were the bulk of the verbs that overran the limit.
+            let sub_class = format!("{class}.{}", action.id);
+            item.set_value("ExtendedSubCommandsKey", &sub_class)?;
             for (preset_order, preset) in action.presets.iter().enumerate() {
                 let preset_key = format!("{:03}_p{}", (preset_order + 1) * 10, preset_order);
-                let (choice, _) = item
-                    .create_subkey(format!(r"shell\{preset_key}"))
+                let (choice, _) = hkcu
+                    .create_subkey(format!(
+                        r"{}\shell\{preset_key}",
+                        menu_class_path(&sub_class)
+                    ))
                     .map_err(|e| AppError::system(format!("could not write a preset: {e}")))?;
                 choice.set_value("MUIVerb", &preset.label)?;
                 if action.multi_file != "single" {
@@ -203,6 +251,7 @@ pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
 pub fn uninstall(extensions: &[String]) -> AppResult<()> {
     uninstall_internal(extensions)?;
     remove_legacy_star_verb();
+    remove_menu_classes();
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let mut config = crate::config::load();
     // Innermost first: `…\.mp4\shell` must go before `…\.mp4`.
@@ -320,6 +369,24 @@ mod tests {
     fn any_file_actions_register_under_the_star_class() {
         assert!(assoc_path("").contains(r"Classes\*\shell\ZapitAnyFile"));
         assert!(assoc_path("mp4").contains(r"SystemFileAssociations\.mp4\shell\Zapit"));
+    }
+
+    #[test]
+    fn menu_items_live_outside_the_file_class() {
+        // Explorer honours ~16 static verbs per file class. `.mp4` needs 34
+        // (11 entries + 23 presets), so items must not be registered there.
+        let class = super::menu_class("mp4");
+        assert_eq!(class, "Zapit.Menu.mp4");
+        assert!(!super::menu_class_path(&class).contains("SystemFileAssociations"));
+        assert_eq!(super::menu_class(""), "Zapit.Menu.AnyFile");
+    }
+
+    #[test]
+    fn every_menu_class_shares_one_sweepable_prefix() {
+        // Uninstall removes them wholesale, so they must all be recognisable.
+        for class in [super::menu_class("mp4"), super::menu_class("")] {
+            assert!(class.starts_with(super::MENU_CLASS_PREFIX));
+        }
     }
 
     #[test]

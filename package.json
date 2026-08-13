@@ -1,7 +1,7 @@
 {
   "name": "zapit",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Right-click any file on Windows and instantly do the obvious thing with it. Offline, private, open source.",
   "license": "MIT",
   "type": "module",

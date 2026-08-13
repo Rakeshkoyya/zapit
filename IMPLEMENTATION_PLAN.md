@@ -199,12 +199,20 @@ For each relevant extension and enabled action:
 HKCU\Software\Classes\SystemFileAssociations\.mp4\shell\Zapit
     MUIVerb   = "Zapit"
     Icon      = "<install>\zapit.exe"
-    SubCommands = ""                      # makes it a cascading flyout
-HKCU\...\Zapit\shell\010_extract-audio
+    ExtendedSubCommandsKey = "Zapit.Menu.mp4"   # items live in their own class
+HKCU\Software\Classes\Zapit.Menu.mp4\shell\010_extract-audio
     MUIVerb   = "Extract audio"
     MultiSelectModel = "Player"
     \command  @= "\"<install>\zapit.exe\" run extract-audio --file \"%1\""
+HKCU\Software\Classes\Zapit.Menu.mp4\shell\030_compress-video
+    MUIVerb   = "Compress video"
+    ExtendedSubCommandsKey = "Zapit.Menu.mp4.compress-video"   # preset flyout
 ```
+- **Why a separate class:** Explorer honours only ~**16 static verbs per file class**, and a
+  preset counts as a verb — `.mp4` needs 34 (11 entries + 23 presets). Registering them in
+  the file class silently truncated the flyout after the fourth entry. `ExtendedSubCommandsKey`
+  moves them out; the file class holds exactly one verb (ADR 005 addendum). `install`/
+  `uninstall` sweep every class under the `Zapit.Menu` prefix.
 - Numeric prefixes (`010_`) control ordering; ids after the prefix must match `QuickAction.id`.
 - G1 (checksum) registers under `HKCU\Software\Classes\*\shell\`**`ZapitAnyFile`** — a
   **different key name** from the per-extension `Zapit` verb. Explorer dedupes verbs by key

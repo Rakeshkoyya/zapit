@@ -89,6 +89,38 @@ The security posture is unchanged in spirit and simpler in practice: instead of 
 set of granted paths and the handler 403s anything not in it. The CSP drops `asset:` for
 `http://zapitmedia.localhost`.
 
+## Addendum (2026-08-13) — menu items moved out of the file class
+
+Renaming the any-file verb (below) removed a real collision but did **not** restore the
+missing entries. The flyout still stopped after "Video → GIF" — the first four entries — with
+Trim, Merge, Mute, Extract frame, Make editing-friendly, Downscale and Checksum absent,
+even though all eleven were present in the registry with valid commands.
+
+The cause is a Windows shell ceiling: Explorer honours roughly **16 static verbs per file
+class**, and a preset is a verb. Counting `.mp4`:
+
+| entry | own verbs | running total |
+|---|---|---|
+| `010_extract-audio` | 1 | 1 |
+| `030_compress-video` | 1 + 7 presets | 9 |
+| `040_convert-video` | 1 + 4 presets | 14 |
+| `050_video-to-gif` | 1 + 3 presets | **18** |
+| `060_trim-video` … | … | 34 |
+
+The cut lands exactly where the running total crosses 16, which is precisely the boundary
+users reported. Preset submenus (added in the §7.3 follow-up) are what pushed it over;
+before them the menu fit.
+
+Fix: the file-class verb now carries **`ExtendedSubCommandsKey`** instead of `SubCommands`,
+pointing at a class of our own (`Zapit.Menu.<ext>`, and `Zapit.Menu.<ext>.<action-id>` for a
+preset flyout). Verbs in those classes do not count against the file class, which is left
+holding exactly one. This is the same mechanism Windows uses for its own large cascading
+menus. `install`/`uninstall` sweep every class under the `Zapit.Menu` prefix, which is
+wholly ours, so the operation stays idempotent.
+
+The lesson worth keeping: the registry containing an entry is not evidence that Explorer
+will draw it. Two rounds of diagnosis assumed otherwise.
+
 ## Addendum (2026-08-13) — the any-file verb needed its own key name
 
 Most video actions were missing from the right-click menu even though the registry
