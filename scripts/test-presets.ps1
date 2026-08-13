@@ -56,32 +56,60 @@ Write-Host "installing menu to read real command lines ..."
 Start-Process $exe -ArgumentList "install-menu" -Wait -WindowStyle Hidden
 
 # Walk every verb key we own and collect (extension, label, commandline).
+#
+# The items are NOT under the file class. Explorer only honours ~16 static
+# verbs per class, so the verb we register there carries an
+# `ExtendedSubCommandsKey` pointing at a class of our own — `Zapit.Menu.<ext>`
+# — and presets hang off a further class per action. Both hops have to be
+# followed or this sweep sees an empty menu. See src-tauri/src/registry_menu.rs.
 $entries = New-Object System.Collections.Generic.List[object]
-function Collect($shellPath, $extension) {
-    foreach ($item in @(Get-ChildItem $shellPath -ErrorAction SilentlyContinue)) {
-        $label = (Get-ItemProperty $item.PSPath -ErrorAction SilentlyContinue).MUIVerb
-        $nested = Join-Path $item.PSPath "shell"
-        if (Test-Path $nested) {
-            foreach ($choice in @(Get-ChildItem $nested)) {
-                $cmd = (Get-ItemProperty (Join-Path $choice.PSPath "command") -ErrorAction SilentlyContinue)."(default)"
-                $sub = (Get-ItemProperty $choice.PSPath -ErrorAction SilentlyContinue).MUIVerb
+
+function SubCommandsClass($keyPath) {
+    (Get-ItemProperty -LiteralPath $keyPath -ErrorAction SilentlyContinue).ExtendedSubCommandsKey
+}
+
+function CollectClass($class, $extension) {
+    $shellPath = "HKCU:\Software\Classes\$class\shell"
+    foreach ($item in @(Get-ChildItem -LiteralPath $shellPath -ErrorAction SilentlyContinue)) {
+        $label = (Get-ItemProperty -LiteralPath $item.PSPath -ErrorAction SilentlyContinue).MUIVerb
+        $presetClass = SubCommandsClass $item.PSPath
+        if ($presetClass) {
+            $presetShell = "HKCU:\Software\Classes\$presetClass\shell"
+            foreach ($choice in @(Get-ChildItem -LiteralPath $presetShell -ErrorAction SilentlyContinue)) {
+                $cmd = (Get-ItemProperty -LiteralPath (Join-Path $choice.PSPath "command") -ErrorAction SilentlyContinue)."(default)"
+                $sub = (Get-ItemProperty -LiteralPath $choice.PSPath -ErrorAction SilentlyContinue).MUIVerb
                 if ($cmd) { $entries.Add([PSCustomObject]@{ Ext = $extension; Label = "$label > $sub"; Cmd = $cmd }) }
             }
         } else {
-            $cmd = (Get-ItemProperty (Join-Path $item.PSPath "command") -ErrorAction SilentlyContinue)."(default)"
+            $cmd = (Get-ItemProperty -LiteralPath (Join-Path $item.PSPath "command") -ErrorAction SilentlyContinue)."(default)"
             if ($cmd) { $entries.Add([PSCustomObject]@{ Ext = $extension; Label = $label; Cmd = $cmd }) }
         }
     }
 }
+
 foreach ($assoc in @(Get-ChildItem "HKCU:\Software\Classes\SystemFileAssociations" -ErrorAction SilentlyContinue)) {
-    $path = Join-Path $assoc.PSPath "shell\Zapit\shell"
-    if (Test-Path $path) { Collect $path ($assoc.PSChildName.TrimStart(".")) }
+    $verb = Join-Path $assoc.PSPath "shell\Zapit"
+    if (-not (Test-Path -LiteralPath $verb)) { continue }
+    $class = SubCommandsClass $verb
+    if ($class) { CollectClass $class ($assoc.PSChildName.TrimStart(".")) }
 }
-if (Test-Path "HKCU:\Software\Classes\*\shell\Zapit\shell") {
-    Collect "HKCU:\Software\Classes\*\shell\Zapit\shell" ""
+# `*` is a literal key name here, not a wildcard, hence -LiteralPath throughout.
+$anyVerb = "HKCU:\Software\Classes\*\shell\ZapitAnyFile"
+if (Test-Path -LiteralPath $anyVerb) {
+    $class = SubCommandsClass $anyVerb
+    if ($class) { CollectClass $class "" }
 }
 
 Write-Host "found $($entries.Count) clickable menu entries`n"
+
+# A sweep that finds nothing must never report success. The registry layout has
+# already moved once under this script (items went into their own classes to
+# dodge the per-class verb ceiling), and the previous version cheerfully printed
+# "all green" having tested exactly zero entries.
+if ($entries.Count -eq 0) {
+    Start-Process $exe -ArgumentList "uninstall-menu" -Wait -WindowStyle Hidden
+    throw "No menu entries found. The registry layout this script walks has changed - fix the walk before trusting this sweep."
+}
 
 # Actions that combine several files can't be driven with a single %1.
 $multiOnly = @("merge-pdf", "merge-videos", "merge-audio", "images-to-pdf")

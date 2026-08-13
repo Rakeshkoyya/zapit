@@ -5,7 +5,7 @@
 > Work milestone by milestone (§10). Do not skip ahead. Update the checkboxes in §10 as tasks complete.
 > If reality forces a deviation from this plan, write an ADR in `docs/adr/` explaining why, *then* deviate.
 
-Last updated: 2026-08-13 · Status: **M7 packaging done + §7.3 preset submenus + the V6/A2 multi-cut timeline window (ADR 005)** — remaining for `v1.0`: the clean-machine DoD pass, then optional Stretch picks
+Last updated: 2026-08-13 · Status: **v1.0.0 packaged** — M7 + §7.3 preset submenus + the V6/A2 multi-cut timeline window (ADR 005) + the UI redesign (ADR 006). Installer built and hashed; `check.ps1` and `smoke.ps1` green. `test-presets.ps1` was walking the pre-ADR-005 registry layout and silently sweeping **zero** entries while reporting success — repaired to follow `ExtendedSubCommandsKey`, and it now fails loudly on an empty sweep. **Still outstanding before the release is announced: the clean-machine DoD pass** (`docs/TEST_MATRIX.md`), which needs a second Windows machine. Then optional Stretch picks.
 
 > **Trim rebuild (2026-08-13, ADR 005):** V6/A2 grew from two text boxes into a timeline
 > editor — preview player, filmstrip + waveform, multiple cut regions, Keep/Remove, and a

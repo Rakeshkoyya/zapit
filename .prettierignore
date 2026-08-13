@@ -2,6 +2,9 @@
 *.md
 dist/
 node_modules/
+# Agent worktrees hold their own dist/ and src-tauri/target/, which the
+# repo-root-anchored patterns here do not reach.
+.claude/
 src-tauri/target/
 src-tauri/gen/
 package-lock.json
