@@ -149,7 +149,9 @@ function buildRow(action: QuickAction): Row {
   const name = el("div", "action__name");
   name.appendChild(el("span", undefined, action.menuLabel));
   if (action.presets !== undefined && action.presets.length > 0) {
-    name.appendChild(el("span", "chip chip--accent", "opens a submenu"));
+    // Presets left the registry in ADR 007: one verb per action, and choosing
+    // it opens the chooser window rather than a nested Explorer flyout.
+    name.appendChild(el("span", "chip chip--accent", "asks you which"));
   }
   text.append(name, el("div", "action__desc", description));
 

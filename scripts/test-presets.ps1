@@ -105,7 +105,17 @@ $failures = New-Object System.Collections.Generic.List[string]
 foreach ($e in $entries) {
     if ($e.Cmd -notmatch 'run\s+([a-z0-9-]+)') { continue }
     $actionId = $Matches[1]
-    $opts = [regex]::Matches($e.Cmd, '--opt\s+(\S+)') | ForEach-Object { $_.Groups[1].Value }
+    $opts = @([regex]::Matches($e.Cmd, '--opt\s+(\S+)') | ForEach-Object { $_.Groups[1].Value })
+
+    # `menu=1` (MENU_ORIGIN) marks an action that picks its preset in a window
+    # rather than carrying the choice on the command line (ADR 007). `smoke`
+    # deliberately ignores the marker, so driving these headlessly just earns a
+    # correct "this action needs options" - a harness limit, not a defect.
+    # Their conversions are covered with real options by smoke.ps1.
+    if ($opts -contains "menu=1") {
+        Write-Host "SKIP  [$($e.Ext)] $($e.Label) - picks its preset in a window" -ForegroundColor DarkGray
+        $skipped++; continue
+    }
 
     $sampleName = $sampleFor[$e.Ext]
     $sample = if ($sampleName) { Join-Path $assets $sampleName } else { $null }
