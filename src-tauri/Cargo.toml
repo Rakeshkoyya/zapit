@@ -38,7 +38,12 @@ winreg = "0.56.0"
 tauri-plugin-opener = "2.5.4"
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.60", features = ["Win32_System_Console"] }
+windows-sys = { version = "0.60", features = [
+    "Win32_System_Console",
+    # SHChangeNotify: the shell caches verb lists, so menu changes are invisible
+    # until it is told associations changed.
+    "Win32_UI_Shell",
+] }
 
 [profile.release]
 codegen-units = 1

@@ -36,6 +36,29 @@ const MENU_LABEL: &str = "Zapit";
 /// file class — the same mechanism Windows uses for its large cascading menus.
 const MENU_CLASS_PREFIX: &str = "Zapit.Menu";
 
+/// Windows caches each file type's verb list, so writing keys is not enough —
+/// the shell keeps serving the old menu until it is told associations changed.
+/// Missing this made three separate menu fixes look like they did nothing: the
+/// registry was correct every time and Explorer kept drawing a stale flyout.
+#[cfg(windows)]
+fn notify_associations_changed() {
+    const SHCNE_ASSOCCHANGED: i32 = 0x0800_0000;
+    const SHCNF_IDLIST: u32 = 0x0000;
+    // SAFETY: SHChangeNotify takes two optional item pointers; null is the
+    // documented "no specific item" value, which is what ASSOCCHANGED wants.
+    unsafe {
+        windows_sys::Win32::UI::Shell::SHChangeNotify(
+            SHCNE_ASSOCCHANGED,
+            SHCNF_IDLIST,
+            std::ptr::null(),
+            std::ptr::null(),
+        );
+    }
+}
+
+#[cfg(not(windows))]
+fn notify_associations_changed() {}
+
 /// Class holding one extension's items, e.g. `Zapit.Menu.mp4`.
 fn menu_class(extension: &str) -> String {
     if extension.is_empty() {
@@ -243,6 +266,7 @@ pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
     created.dedup();
     config.created_registry_keys = created;
     let _ = crate::config::save(&config);
+    notify_associations_changed();
     Ok(())
 }
 
@@ -262,6 +286,7 @@ pub fn uninstall(extensions: &[String]) -> AppResult<()> {
     }
     config.created_registry_keys.clear();
     let _ = crate::config::save(&config);
+    notify_associations_changed();
     Ok(())
 }
 
