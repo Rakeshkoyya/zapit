@@ -153,10 +153,16 @@ foreach ($e in $entries) {
     $produced = @(Get-ChildItem $out -File | Where-Object { $_.Name -notlike "_sweep-*" -and $_.Length -gt 0 })
     $stdout = (Get-Content $logOut -Raw -ErrorAction SilentlyContinue)
 
-    $reason = ($stdout -replace "`r`n", " ").Trim()
+    # -Raw usually yields one string, but not always; joining first keeps this
+    # total, because a .Trim() on an Object[] aborts the whole sweep.
+    $reason = ((@($stdout) -join " ") -replace "`r`n", " ").Trim()
     $label = "[$($e.Ext)] $($e.Label)"
 
-    if ($p.ExitCode -eq 0 -and $produced.Count -gt 0) {
+    # Checksum's whole output IS the hash on stdout - it writes no file, so
+    # "produced nothing" is success for it and failure for everything else.
+    $reportsOnStdout = $actionId -eq "checksum"
+
+    if ($p.ExitCode -eq 0 -and ($produced.Count -gt 0 -or $reportsOnStdout)) {
         Write-Host "PASS  $label" -ForegroundColor Green
         $pass++
     } elseif ($reason -match "already |has no audio|No text found|doesn't look like|too small|can't be remuxed|Choose ") {
