@@ -5,52 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trim — Zapit</title>
     <style>
+      /* Editor chrome for the Trim window; tokens come from src/ui/theme.css. */
       :root {
-        color-scheme: light dark;
-        font-family: "Segoe UI", system-ui, sans-serif;
-        font-size: 13px;
-        --accent: #4c8dff;
-        --keep: rgba(76, 141, 255, 0.35);
-        --keep-solid: #4c8dff;
-        --remove: rgba(229, 72, 77, 0.35);
-        --remove-solid: #e5484d;
-        --track: rgba(128, 128, 128, 0.16);
+        --keep-solid: var(--accent);
+        --keep: color-mix(in srgb, var(--accent) 26%, transparent);
+        --remove-solid: var(--danger);
+        --remove: color-mix(in srgb, var(--danger) 26%, transparent);
+        --track-bg: var(--bg-subtle);
       }
       body {
-        margin: 0;
         height: 100vh;
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        padding: 12px 16px 14px;
-        box-sizing: border-box;
         user-select: none;
+        overflow: hidden;
       }
-      #name {
-        margin: 0;
-        font-weight: 600;
+
+      /* ---- title bar ---- */
+      .head {
+        flex: none;
         display: flex;
-        justify-content: space-between;
-        gap: 12px;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
       }
-      #name span:last-child {
-        font-weight: 400;
-        opacity: 0.7;
-        white-space: nowrap;
+      .head__icon {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        flex: none;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
       }
-      #name span:first-child {
+      .head__text {
+        min-width: 0;
+        flex: 1;
+      }
+      #file-name {
+        display: block;
+        font-family: var(--font-display);
+        font-weight: 600;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+      #duration {
+        display: block;
+        font-size: 11.5px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+      }
+      #duration:empty {
+        display: none;
+      }
+
+      /* Keep / Remove — what a drag on the timeline means. */
+      .seg-toggle {
+        display: inline-flex;
+        flex: none;
+        padding: 2px;
+        gap: 2px;
+        border-radius: var(--radius);
+        background: var(--bg-subtle);
+      }
+      .seg-toggle button {
+        border: 0;
+        padding: 4px 13px;
+        border-radius: 5px;
+        font: inherit;
+        font-weight: 500;
+        color: var(--text-muted);
+        background: transparent;
+        cursor: pointer;
+        transition:
+          background 120ms var(--ease),
+          color 120ms var(--ease);
+      }
+      .seg-toggle button:hover {
+        color: var(--text);
+      }
+      #mode-keep[aria-pressed="true"] {
+        background: var(--accent);
+        color: var(--on-accent);
+      }
+      #mode-remove[aria-pressed="true"] {
+        background: var(--danger);
+        color: #fff;
+      }
+
+      /* ---- body ---- */
+      .work {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 16px;
       }
 
       /* ---- player ---- */
       #stage {
         flex: 1 1 auto;
-        min-height: 140px;
+        min-height: 130px;
         position: relative;
-        background: #000;
-        border-radius: 6px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        background: #05060a;
         overflow: hidden;
         display: flex;
         align-items: center;
@@ -71,75 +135,74 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        gap: 11px;
         text-align: center;
-        color: #ddd;
-        padding: 16px;
+        color: #d7dbe4;
+        padding: 18px;
       }
       #stage-message[hidden] {
         display: none;
       }
       #stage-note {
-        max-width: 34em;
-        opacity: 0.85;
-        line-height: 1.5;
-        margin: 0;
+        max-width: 38em;
+        font-size: 12.5px;
+        line-height: 1.55;
+        opacity: 0.9;
+      }
+      #stage-message .btn {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.22);
+        color: #fff;
+      }
+      #stage-message .btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.35);
       }
       #proxy-bar {
         width: 220px;
         height: 4px;
-        border-radius: 2px;
-        background: rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius-pill);
+        background: rgba(255, 255, 255, 0.18);
         overflow: hidden;
       }
       #proxy-fill {
         height: 100%;
         width: 0%;
         background: var(--accent);
+        transition: width 200ms var(--ease);
       }
 
       /* ---- transport ---- */
       #transport {
+        flex: none;
         display: flex;
         align-items: center;
         gap: 10px;
       }
       #clock {
         font-variant-numeric: tabular-nums;
-        opacity: 0.8;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        min-width: 5.5em;
       }
-      .spacer {
-        flex: 1;
-      }
-      .seg-toggle {
-        display: inline-flex;
-        border: 1px solid rgba(128, 128, 128, 0.45);
-        border-radius: 5px;
-        overflow: hidden;
-      }
-      .seg-toggle button {
-        border: 0;
-        padding: 4px 12px;
-        font: inherit;
-        background: transparent;
-        cursor: pointer;
-      }
-      .seg-toggle button[aria-pressed="true"] {
-        background: var(--accent);
-        color: #fff;
+      .hint {
+        font-size: 11.5px;
+        color: var(--text-faint);
       }
 
       /* ---- timeline ---- */
       #timeline {
+        flex: none;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 5px;
       }
       #track {
         position: relative;
-        height: 74px;
-        border-radius: 5px;
-        background: var(--track);
+        height: 78px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--track-bg);
         cursor: crosshair;
         touch-action: none;
         overflow: hidden;
@@ -154,7 +217,7 @@
         pointer-events: none;
       }
       #wave {
-        opacity: 0.55;
+        opacity: 0.5;
       }
       #regions {
         position: absolute;
@@ -167,47 +230,63 @@
         bottom: 0;
         background: var(--keep);
         border: 1px solid var(--keep-solid);
-        border-radius: 3px;
+        border-radius: 4px;
         box-sizing: border-box;
         pointer-events: auto;
         cursor: grab;
+        transition: background 120ms var(--ease);
+      }
+      .region:active {
+        cursor: grabbing;
       }
       body[data-region-mode="remove"] .region {
         background: var(--remove);
         border-color: var(--remove-solid);
       }
       .region.selected {
-        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) inset;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+          0 2px 10px rgba(0, 0, 0, 0.25);
       }
       .region-label {
         position: absolute;
-        top: 2px;
-        left: 6px;
-        font-size: 11px;
-        font-weight: 600;
+        top: 3px;
+        left: 7px;
+        font-size: 10.5px;
+        font-weight: 700;
         color: #fff;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
         pointer-events: none;
       }
       .handle {
         position: absolute;
         top: 0;
         bottom: 0;
-        width: 9px;
+        width: 10px;
         cursor: ew-resize;
         background: var(--keep-solid);
-        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      /* The grip line that says "drag me". */
+      .handle::after {
+        content: "";
+        width: 2px;
+        height: 16px;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.85);
       }
       body[data-region-mode="remove"] .handle {
         background: var(--remove-solid);
       }
       .handle-start {
         left: -1px;
-        border-radius: 3px 0 0 3px;
+        border-radius: 4px 0 0 4px;
       }
       .handle-end {
         right: -1px;
-        border-radius: 0 3px 3px 0;
+        border-radius: 0 4px 4px 0;
       }
       #playhead {
         position: absolute;
@@ -216,23 +295,50 @@
         width: 2px;
         margin-left: -1px;
         background: #fff;
-        box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.85);
         pointer-events: none;
+      }
+      #playhead::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid #fff;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
       }
       #ruler {
         display: flex;
         justify-content: space-between;
-        font-size: 11px;
-        opacity: 0.6;
+        font-size: 10.5px;
+        color: var(--text-faint);
         font-variant-numeric: tabular-nums;
       }
 
       /* ---- cut list ---- */
+      .cuts-panel {
+        flex: 0 1 auto;
+        min-height: 62px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        overflow: hidden;
+      }
+      .cuts-panel__head {
+        flex: none;
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-subtle);
+      }
       #cuts {
-        max-height: 84px;
+        flex: 1 1 auto;
         overflow-y: auto;
         margin: 0;
-        padding: 0;
+        padding: 4px;
         list-style: none;
         display: flex;
         flex-direction: column;
@@ -241,116 +347,205 @@
       #cuts li {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 2px 4px;
-        border-radius: 4px;
+        gap: 9px;
+        padding: 4px 7px;
+        border-radius: var(--radius-sm);
+        font-size: 12.5px;
         font-variant-numeric: tabular-nums;
         cursor: pointer;
       }
+      #cuts li:hover {
+        background: var(--overlay);
+      }
       #cuts li.selected {
-        background: rgba(128, 128, 128, 0.18);
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 500;
       }
       #cuts .index {
-        width: 1.4em;
-        opacity: 0.6;
+        display: grid;
+        place-items: center;
+        flex: none;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: var(--overlay);
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+      #cuts li.selected .index {
+        background: var(--accent);
+        color: var(--on-accent);
       }
       #cuts .drop {
         margin-left: auto;
         border: 0;
         background: transparent;
         font: inherit;
+        color: var(--text-faint);
         cursor: pointer;
-        opacity: 0.7;
-        padding: 0 6px;
+        padding: 0 5px;
+        border-radius: var(--radius-sm);
+      }
+      #cuts .drop:hover {
+        color: var(--danger);
+        background: var(--danger-soft);
       }
       #empty {
-        opacity: 0.7;
-        margin: 0;
+        padding: 14px 10px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-faint);
+      }
+      #empty[hidden] {
+        display: none;
       }
 
       /* ---- footer ---- */
-      #options {
+      .foot {
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        padding: 10px 16px 12px;
+        border-top: 1px solid var(--border);
+        background: var(--card);
+      }
+      .opt-row {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 18px;
         flex-wrap: wrap;
       }
-      label {
+      .opt-toggle {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
+        gap: 8px;
+        font-size: 12.5px;
+        cursor: pointer;
       }
-      #footer {
+      .opt-toggle small {
+        display: block;
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+      .act-row {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 9px;
       }
       #summary {
-        opacity: 0.8;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
       }
       #error {
-        color: #e5484d;
-      }
-      button {
-        font: inherit;
-        padding: 4px 16px;
+        font-size: 12.5px;
+        color: var(--danger);
+        font-weight: 500;
       }
       #go {
-        font-weight: 600;
+        min-width: 96px;
       }
     </style>
   </head>
   <body data-region-mode="keep">
-    <p id="name"><span id="file-name"></span><span id="duration"></span></p>
-
-    <div id="stage">
-      <video id="media" preload="metadata" playsinline></video>
-      <div id="stage-message" hidden>
-        <p id="stage-note"></p>
-        <button id="build-preview" type="button" hidden>Build preview</button>
-        <div id="proxy-bar" hidden><div id="proxy-fill"></div></div>
-        <button id="cancel-preview" type="button" hidden>Cancel</button>
-      </div>
-    </div>
-
-    <div id="transport">
-      <button id="play" type="button">▶ Play cut</button>
-      <span id="clock">0:00.0</span>
-      <span class="spacer"></span>
-      <span class="seg-toggle">
+    <header class="head">
+      <span class="head__icon">
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="6" cy="6" r="3" />
+          <circle cx="6" cy="18" r="3" />
+          <path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1l3 3" />
+        </svg>
+      </span>
+      <span class="head__text">
+        <span id="file-name"></span>
+        <span id="duration"></span>
+      </span>
+      <span class="seg-toggle" role="group" aria-label="What dragging on the timeline does">
         <button id="mode-keep" type="button" aria-pressed="true">Keep</button>
         <button id="mode-remove" type="button" aria-pressed="false">Remove</button>
       </span>
-      <button id="add-cut" type="button">+ Add cut</button>
-    </div>
+    </header>
 
-    <div id="timeline">
-      <div id="track">
-        <div id="strip"></div>
-        <div id="wave"></div>
-        <div id="regions"></div>
-        <div id="playhead"></div>
+    <div class="work">
+      <div id="stage">
+        <video id="media" preload="metadata" playsinline></video>
+        <div id="stage-message" hidden>
+          <p id="stage-note"></p>
+          <button class="btn" id="build-preview" type="button" hidden>Build preview</button>
+          <div id="proxy-bar" hidden><div id="proxy-fill"></div></div>
+          <button class="btn" id="cancel-preview" type="button" hidden>Cancel</button>
+        </div>
       </div>
-      <div id="ruler"></div>
+
+      <div id="transport">
+        <button class="btn" id="play" type="button">▶ Play cut</button>
+        <span id="clock">0:00.0</span>
+        <span class="spacer"></span>
+        <span class="hint">Drag across the timeline to make a cut</span>
+        <button class="btn" id="add-cut" type="button">+ Add cut</button>
+      </div>
+
+      <div id="timeline">
+        <div id="track">
+          <div id="strip"></div>
+          <div id="wave"></div>
+          <div id="regions"></div>
+          <div id="playhead"></div>
+        </div>
+        <div id="ruler"></div>
+      </div>
+
+      <div class="cuts-panel">
+        <div class="cuts-panel__head eyebrow">Cuts</div>
+        <ul id="cuts"></ul>
+        <p id="empty" hidden></p>
+      </div>
     </div>
 
-    <ul id="cuts"></ul>
-    <p id="empty" hidden></p>
+    <div class="foot">
+      <div class="opt-row">
+        <label class="opt-toggle">
+          <span class="switch">
+            <input id="lossless" type="checkbox" />
+            <span class="switch__track"></span>
+          </span>
+          <span>
+            Lossless
+            <small>Much faster, but cuts land on the nearest keyframe</small>
+          </span>
+        </label>
+        <label class="opt-toggle">
+          <span class="switch">
+            <input id="merge" type="checkbox" checked />
+            <span class="switch__track"></span>
+          </span>
+          <span>
+            Merge cuts
+            <small>Off saves each cut as its own file</small>
+          </span>
+        </label>
+      </div>
 
-    <div id="options">
-      <label
-        ><input id="lossless" type="checkbox" /> Lossless (approximate — cuts at the nearest
-        keyframe)</label
-      >
-      <label><input id="merge" type="checkbox" checked /> Merge cuts into one file</label>
-    </div>
-
-    <div id="footer">
-      <span id="summary"></span>
-      <span id="error"></span>
-      <span class="spacer"></span>
-      <button id="cancel" type="button">Cancel</button>
-      <button id="go" type="button">Trim</button>
+      <div class="act-row">
+        <span id="summary"></span>
+        <span id="error"></span>
+        <span class="spacer"></span>
+        <button class="btn" id="cancel" type="button">Cancel</button>
+        <button class="btn btn--primary" id="go" type="button">Trim</button>
+      </div>
     </div>
 
     <script type="module" src="/src/windows/trim/main.ts"></script>

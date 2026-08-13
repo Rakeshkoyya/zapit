@@ -5,73 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Metadata — Zapit</title>
     <style>
-      :root {
-        color-scheme: light dark;
-        font-family: "Segoe UI", system-ui, sans-serif;
-        font-size: 13px;
-      }
-      body {
-        margin: 0;
-        padding: 14px 18px;
-      }
-      #name {
-        margin: 0 0 10px;
-        font-weight: 600;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
       #wrap {
-        max-height: 300px;
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
-        border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-        border-radius: 4px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
       }
       table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 12.5px;
       }
       td {
-        padding: 3px 8px;
+        padding: 6px 10px;
         vertical-align: top;
-        border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+        border-bottom: 1px solid var(--border);
+      }
+      tr:last-child td {
+        border-bottom: 0;
       }
       td:first-child {
-        width: 40%;
-        opacity: 0.75;
+        width: 42%;
+        color: var(--text-muted);
       }
+      /* `sensitive` is set by metadata/main.ts for GPS and other locating tags. */
       tr.sensitive td {
-        color: #e5484d;
+        background: var(--danger-soft);
+        color: var(--danger);
         font-weight: 600;
       }
       #empty {
-        opacity: 0.7;
-        padding: 10px;
+        padding: 16px;
+        text-align: center;
+        color: var(--text-faint);
+        font-size: 12.5px;
       }
-      #buttons {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 14px;
-      }
-      button {
-        font: inherit;
-        padding: 4px 16px;
+      #empty[hidden] {
+        display: none;
       }
     </style>
   </head>
-  <body>
-    <p id="name"></p>
-    <div id="wrap">
-      <p id="empty" hidden>No EXIF metadata found in this file.</p>
-      <table>
-        <tbody id="rows"></tbody>
-      </table>
+  <body class="dialog">
+    <div class="dialog__head">
+      <div class="dialog__title truncate" id="name"></div>
+      <div class="dialog__sub">Hidden information stored inside this file</div>
     </div>
-    <div id="buttons">
-      <button id="close" type="button">Close</button>
-      <button id="strip" type="button">Remove all metadata</button>
+
+    <div class="dialog__body">
+      <p class="banner">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v5M12 8h.01" />
+        </svg>
+        <span>
+          Anything highlighted in red can reveal where the photo was taken. Removing metadata saves
+          a clean copy — your original is untouched.
+        </span>
+      </p>
+      <div id="wrap">
+        <p id="empty" hidden>No metadata found in this file.</p>
+        <table>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
     </div>
+
+    <div class="dialog__foot">
+      <span class="spacer"></span>
+      <button class="btn" id="close" type="button">Close</button>
+      <button class="btn btn--primary" id="strip" type="button">Remove all metadata</button>
+    </div>
+
     <script type="module" src="/src/windows/metadata/main.ts"></script>
   </body>
 </html>

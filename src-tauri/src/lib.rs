@@ -409,7 +409,10 @@ fn open_settings_window(app: &AppHandle) {
             WebviewUrl::App("settings.html".into()),
         )
         .title("Zapit Settings")
-        .inner_size(560.0, 640.0)
+        // Sidebar nav plus an action list carrying descriptions and file-type
+        // chips; the old 560px box forced both into one cramped column.
+        .inner_size(880.0, 700.0)
+        .min_inner_size(720.0, 540.0)
         .build();
     });
 }

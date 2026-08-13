@@ -293,6 +293,10 @@ struct WindowSize {
 
 /// Prompt windows are fixed-size dialogs. Trim is a real editor — a player, a
 /// filmstrip and a segment list do not fit in a 420×240 box (ADR 005).
+///
+/// The rest are sized to their content: a title, the question, presets and an
+/// action bar. Windows carrying an explanation or a list need more room than
+/// the plain one-field prompts.
 fn window_size(window: &str) -> WindowSize {
     match window {
         "trim" => WindowSize {
@@ -300,9 +304,33 @@ fn window_size(window: &str) -> WindowSize {
             height: 660.0,
             resizable: true,
         },
+        // A scrolling EXIF table.
+        "metadata" => WindowSize {
+            width: 520.0,
+            height: 520.0,
+            resizable: true,
+        },
+        // A scrolling file list with move buttons.
+        "reorder" => WindowSize {
+            width: 480.0,
+            height: 440.0,
+            resizable: true,
+        },
+        // Two fields plus a "don't lose this password" warning.
+        "prompt-password-set" => WindowSize {
+            width: 460.0,
+            height: 340.0,
+            resizable: false,
+        },
+        // One field plus an explanatory note.
+        "prompt-video-size" | "prompt-ranges" | "prompt-password" => WindowSize {
+            width: 470.0,
+            height: 310.0,
+            resizable: false,
+        },
         _ => WindowSize {
-            width: 420.0,
-            height: 240.0,
+            width: 450.0,
+            height: 260.0,
             resizable: false,
         },
     }

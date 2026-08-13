@@ -1,0 +1,55 @@
+/*
+ * The one-question dialogs (target size, page ranges, passwords, …).
+ *
+ * All seven prompt pages share this, so they stay pixel-identical to each
+ * other and only their wording differs.
+ */
+
+.prompt__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.prompt__input {
+  width: 100%;
+}
+
+/* Preset buttons are injected by prompt/main.ts, so they carry no class. */
+#presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+#presets:empty {
+  display: none;
+}
+
+#presets button {
+  min-height: 26px;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 120ms var(--ease),
+    color 120ms var(--ease),
+    border-color 120ms var(--ease);
+}
+
+#presets button:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+#error:empty {
+  display: none;
+}

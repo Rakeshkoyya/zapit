@@ -5,67 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Order files — Zapit</title>
     <style>
-      :root {
-        color-scheme: light dark;
-        font-family: "Segoe UI", system-ui, sans-serif;
-        font-size: 13px;
-      }
-      body {
-        margin: 0;
-        padding: 14px 18px;
-        user-select: none;
-      }
-      h1 {
-        font-size: 13px;
-        margin: 0 0 10px;
-      }
       #list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
         list-style: none;
         margin: 0;
         padding: 0;
-        max-height: 260px;
-        overflow-y: auto;
-        border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-        border-radius: 4px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        counter-reset: item;
       }
       #list li {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 5px 8px;
-        border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+        padding: 7px 9px;
+        border-bottom: 1px solid var(--border);
       }
       #list li:last-child {
         border-bottom: none;
       }
+      #list li:hover {
+        background: var(--card-hover);
+      }
+      /* The position number is presentational, so CSS owns it. */
+      #list li::before {
+        counter-increment: item;
+        content: counter(item);
+        display: grid;
+        place-items: center;
+        flex: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--bg-subtle);
+        color: var(--text-muted);
+        font-size: 10.5px;
+        font-weight: 600;
+      }
       .name {
         flex: 1;
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        font-size: 12.5px;
       }
-      button {
+      /* Move buttons are built by reorder/main.ts and carry no class. */
+      #list li button {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--card);
+        color: var(--text-muted);
         font: inherit;
-        padding: 2px 8px;
+        cursor: pointer;
       }
-      #buttons {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 14px;
+      #list li button:hover:not(:disabled) {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
       }
-      #buttons button {
-        padding: 4px 16px;
+      #list li button:disabled {
+        opacity: 0.35;
+        cursor: default;
       }
     </style>
   </head>
-  <body>
-    <h1>Merge in this order:</h1>
-    <ul id="list"></ul>
-    <div id="buttons">
-      <button id="cancel" type="button">Cancel</button>
-      <button id="go" type="button">Merge</button>
+  <body class="dialog">
+    <div class="dialog__head">
+      <div class="dialog__title">Order the files</div>
+      <div class="dialog__sub">They are joined top to bottom, in this order.</div>
     </div>
+
+    <div class="dialog__body">
+      <ul id="list"></ul>
+    </div>
+
+    <div class="dialog__foot">
+      <span class="spacer"></span>
+      <button class="btn" id="cancel" type="button">Cancel</button>
+      <button class="btn btn--primary" id="go" type="button">Merge</button>
+    </div>
+
     <script type="module" src="/src/windows/reorder/main.ts"></script>
   </body>
 </html>

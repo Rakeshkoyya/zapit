@@ -5,6 +5,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import "../../ui/theme.css";
 
 const params = new URLSearchParams(window.location.search);
 const hash = params.get("hash") ?? "";

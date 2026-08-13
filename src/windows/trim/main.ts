@@ -12,6 +12,7 @@ import { formatSegments, invertSegments, totalSeconds, type Segment } from "../.
 import { Timeline } from "./timeline";
 import { SegmentPlayer } from "./player";
 import { buildProxy, cancelProxy, loadAssets, sourceUrl, type SourceInfo } from "./preview";
+import "../../ui/theme.css";
 
 const params = new URLSearchParams(window.location.search);
 const jobId = params.get("job") ?? "";

@@ -4,6 +4,7 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import "../../ui/theme.css";
 
 interface ProgressEvent {
   readonly jobId: string;
@@ -20,8 +21,14 @@ const bar = document.getElementById("bar") as HTMLProgressElement | null;
 const percentEl = document.getElementById("percent");
 const cancelBtn = document.getElementById("cancel");
 
+/** `compress-video` → `Compress video`, for the moment before the first event. */
+function prettyAction(id: string): string {
+  const words = id.replace(/-/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 if (label !== null && actionId !== "") {
-  label.textContent = actionId;
+  label.textContent = `${prettyAction(actionId)}…`;
 }
 
 void listen<ProgressEvent>("job://progress", (event) => {

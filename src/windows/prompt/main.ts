@@ -6,6 +6,8 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import "../../ui/theme.css";
+import "../../ui/prompt.css";
 
 const params = new URLSearchParams(window.location.search);
 const jobId = params.get("job") ?? "";

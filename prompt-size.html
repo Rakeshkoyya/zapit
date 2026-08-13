@@ -8,60 +8,28 @@
     <meta name="prompt-label" content="Target size in KB" />
     <meta name="prompt-placeholder" content="50" />
     <meta name="prompt-presets" content="20,50,100,200" />
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family: "Segoe UI", system-ui, sans-serif;
-        font-size: 13px;
-      }
-      body {
-        margin: 0;
-        padding: 14px 18px;
-        user-select: none;
-      }
-      #name {
-        margin: 0 0 10px;
-        font-weight: 600;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      #label {
-        display: block;
-        margin-bottom: 6px;
-      }
-      input {
-        font: inherit;
-        width: 140px;
-        padding: 3px 6px;
-      }
-      #presets {
-        display: inline-flex;
-        gap: 6px;
-        margin-left: 10px;
-      }
-      #presets button,
-      #buttons button {
-        font: inherit;
-        padding: 3px 12px;
-      }
-      #buttons {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 16px;
-      }
-    </style>
   </head>
-  <body>
-    <p id="name"></p>
-    <label id="label" for="value"></label>
-    <input id="value" type="text" />
-    <span id="presets"></span>
-    <div id="buttons">
-      <button id="cancel" type="button">Cancel</button>
-      <button id="go" type="button">Go</button>
+  <body class="dialog">
+    <div class="dialog__head">
+      <div class="dialog__title">Compress to size</div>
+      <div class="dialog__sub truncate" id="name"></div>
     </div>
+
+    <div class="dialog__body">
+      <div>
+        <label class="prompt__label" id="label" for="value"></label>
+        <input class="field prompt__input" id="value" type="text" inputmode="numeric" />
+        <span id="presets"></span>
+      </div>
+      <p class="error" id="error"></p>
+    </div>
+
+    <div class="dialog__foot">
+      <span class="spacer"></span>
+      <button class="btn" id="cancel" type="button">Cancel</button>
+      <button class="btn btn--primary" id="go" type="button">Compress</button>
+    </div>
+
     <script type="module" src="/src/windows/prompt/main.ts"></script>
   </body>
 </html>
