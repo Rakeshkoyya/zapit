@@ -100,6 +100,18 @@ export async function startPlanService(): Promise<void> {
   }
   await startMenuService();
   await startJsService();
+  /**
+   * True when the context menu launched a preset-bearing action and the user
+   * has not chosen yet. `menu=1` must be the *only* option: once the presets
+   * window replies it adds `preset` (and the preset's own keys), which lets the
+   * next round build a plan instead of reopening the window.
+   */
+  const fromMenuWithoutChoice = (
+    action: { readonly presets?: readonly unknown[] },
+    options: Readonly<Record<string, string>>,
+  ): boolean =>
+    (action.presets?.length ?? 0) > 0 && options.menu === "1" && Object.keys(options).length === 1;
+
   await listen<PlanRequest>("plan://request", (event) => {
     const { jobId, actionId, inputs, options } = event.payload;
     const action = findAction(actionId);
@@ -108,6 +120,14 @@ export async function startPlanService(): Promise<void> {
       return;
     }
     try {
+      // A preset action invoked from the context menu carries `menu=1` and
+      // nothing else: presets are no longer registry submenus (they blew past
+      // Explorer's ~16-verb-per-class ceiling), so the choice happens in a
+      // window instead. CLI and `smoke` runs pass real options and skip this.
+      if (fromMenuWithoutChoice(action, options)) {
+        void invoke("plan_needs_options", { jobId, window: "presets" });
+        return;
+      }
       const plan = action.buildPlan(inputs, options);
       void invoke("plan_built", { jobId, plan });
     } catch (err) {

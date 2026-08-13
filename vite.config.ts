@@ -23,6 +23,7 @@ export default defineConfig({
         promptFrameTime: "prompt-frame-time.html",
         promptPassword: "prompt-password.html",
         promptPasswordSet: "prompt-password-set.html",
+        presets: "presets.html",
         reorder: "reorder.html",
         metadata: "metadata.html",
         result: "result.html",

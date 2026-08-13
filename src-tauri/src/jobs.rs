@@ -220,6 +220,7 @@ fn gather_options(
     app: &AppHandle,
     state: &JobState,
     job_id: &str,
+    action_id: &str,
     window: &str,
     inputs: &[FileInfoPayload],
 ) -> AppResult<BTreeMap<String, String>> {
@@ -244,8 +245,9 @@ fn gather_options(
     let files_json = serde_json::to_string(&all_names).unwrap_or_else(|_| "[]".into());
     let label = format!("options-{job_id}");
     // `path` lets a window fetch its own data (I6 reads EXIF directly).
+    // `action` lets the presets window look up which choices to draw (ADR 007).
     let url = format!(
-        "{window}.html?job={job_id}&duration={duration}&hasVideo={}&hasAudio={}&name={}&files={}&path={}",
+        "{window}.html?job={job_id}&action={action_id}&duration={duration}&hasVideo={}&hasAudio={}&name={}&files={}&path={}",
         u8::from(has_video),
         u8::from(has_audio),
         urlencoded(file_name),
@@ -299,6 +301,12 @@ struct WindowSize {
 /// the plain one-field prompts.
 fn window_size(window: &str) -> WindowSize {
     match window {
+        // A choice list needs room for its longest label, not a text field.
+        "presets" => WindowSize {
+            width: 380.0,
+            height: 400.0,
+            resizable: false,
+        },
         "trim" => WindowSize {
             width: 900.0,
             height: 660.0,
@@ -450,10 +458,13 @@ fn run_plan(
     out_dir_override: Option<&Path>,
     headless: bool,
 ) -> AppResult<Vec<PathBuf>> {
-    // Plan loop: at most one options round-trip (window) then a real plan.
+    // Plan loop: at most two options round-trips, then a real plan. Two, not
+    // one, because a preset choice can lead to a detail prompt — "Extract frame
+    // ▸ At a time…" opens the presets window and then the timestamp box.
+    const MAX_OPTION_ROUNDS: usize = 2;
     let mut merged_options = options.clone();
     let mut plan: Option<EnginePlan> = None;
-    for round in 0..2 {
+    for round in 0..=MAX_OPTION_ROUNDS {
         match request_plan(app, state, job_id, action_id, inputs, &merged_options)? {
             PlanResponse::Plan(p) => {
                 plan = Some(p);
@@ -461,7 +472,7 @@ fn run_plan(
             }
             PlanResponse::Failed(message) => return Err(AppError::user(message)),
             PlanResponse::NeedsOptions(window) => {
-                if round == 1 {
+                if round == MAX_OPTION_ROUNDS {
                     return Err(AppError::system(
                         "the action kept asking for options — planning bug",
                     ));
@@ -473,7 +484,7 @@ fn run_plan(
                         "This action needs options — pass them with --opt (e.g. --opt targetMb=25).",
                     ));
                 }
-                let received = gather_options(app, state, job_id, &window, inputs)?;
+                let received = gather_options(app, state, job_id, action_id, &window, inputs)?;
                 merged_options.extend(received);
             }
         }

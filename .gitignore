@@ -26,3 +26,7 @@ Thumbs.db
 
 # Build artefacts that occasionally land in the tree
 *.reg
+
+# Agent scratch. Session worktrees under here are embedded git repos, so
+# `git add -A` would commit them as broken submodule stubs.
+.claude/

@@ -199,29 +199,30 @@ For each relevant extension and enabled action:
 HKCU\Software\Classes\SystemFileAssociations\.mp4\shell\Zapit
     MUIVerb   = "Zapit"
     Icon      = "<install>\zapit.exe"
-    ExtendedSubCommandsKey = "Zapit.Menu.mp4"   # items live in their own class
-HKCU\Software\Classes\Zapit.Menu.mp4\shell\010_extract-audio
+    SubCommands = ""                      # makes it a cascading flyout
+HKCU\...\Zapit\shell\010_extract-audio
     MUIVerb   = "Extract audio"
     MultiSelectModel = "Player"
     \command  @= "\"<install>\zapit.exe\" run extract-audio --file \"%1\""
-HKCU\Software\Classes\Zapit.Menu.mp4\shell\030_compress-video
+HKCU\...\Zapit\shell\030_compress-video   # a preset action: still ONE verb
     MUIVerb   = "Compress video"
-    ExtendedSubCommandsKey = "Zapit.Menu.mp4.compress-video"   # preset flyout
+    \command  @= "\"<install>\zapit.exe\" run compress-video --opt menu=1 --file \"%1\""
 ```
-- **Why a separate class:** Explorer honours only ~**16 static verbs per file class**, and a
-  preset counts as a verb — `.mp4` needs 34 (11 entries + 23 presets). Registering them in
-  the file class silently truncated the flyout after the fourth entry. `ExtendedSubCommandsKey`
-  moves them out; the file class holds exactly one verb (ADR 005 addendum). `install`/
-  `uninstall` sweep every class under the `Zapit.Menu` prefix.
+- **One verb per action, never a preset submenu (ADR 007).** Explorer honours only ~**16
+  static verbs per file class** and a preset counts as a verb — `.mp4` needed 34 (11 actions
+  + 23 presets), so the flyout silently truncated after the fourth entry. `--opt menu=1`
+  routes preset actions to `presets.html` instead. `.mp4` now registers 12.
+- **`SubCommands=""` is the only cascading form that works here.** `ExtendedSubCommandsKey`
+  is documented but Explorer **ignores it under `SystemFileAssociations`** — the registry
+  looks right and the menu does not change. `install`/`uninstall` sweep the `Zapit.Menu.*`
+  classes left by that attempt.
 - Numeric prefixes (`010_`) control ordering; ids after the prefix must match `QuickAction.id`.
-- G1 (checksum) registers under `HKCU\Software\Classes\*\shell\`**`ZapitAnyFile`** — a
-  **different key name** from the per-extension `Zapit` verb. Explorer dedupes verbs by key
-  name, so while both were called `Zapit` the any-file flyout shadowed the per-extension one
-  and most video actions never appeared (ADR 005 addendum). Display text is `MUIVerb`, so
-  both still read "Zapit".
-- Any-file actions are *also* written into each extension's own flyout, so a video's menu
-  never depends on two verbs coexisting. `install`/`uninstall` sweep the legacy
-  `*\shell\Zapit` key left by pre-fix builds.
+- G1 (checksum) registers under `HKCU\Software\Classes\*\shell\Zapit` — **the same key name**
+  as the per-extension verb, on purpose. Explorer dedupes verbs by key name; giving the
+  any-file class its own name put *two* "Zapit" entries in the menu. Any-file actions are
+  also folded into each extension's flyout, so nothing depends on two verbs coexisting.
+- After writing keys, `SHChangeNotify(SHCNE_ASSOCCHANGED)` — the shell caches verb lists and
+  will otherwise keep drawing the old menu.
 - `install-menu` writes keys for *enabled* actions only; Settings toggles rewrite them; `uninstall-menu` deletes every key we own and nothing else. Idempotent both ways.
 - Win11: appears under "Show more options" — per GOALS.md non-goals, that is the contract.
 

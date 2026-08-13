@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choose — Zapit</title>
+    <style>
+      /* One column of choices; the list is short by construction. */
+      #choices {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .choice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          background 120ms var(--ease),
+          border-color 120ms var(--ease);
+      }
+      .choice:hover {
+        background: var(--bg-subtle);
+        border-color: var(--accent);
+      }
+      .choice:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .choice__key {
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        flex: none;
+        border-radius: 5px;
+        background: var(--bg-subtle);
+        color: var(--text-muted);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body class="dialog">
+    <div class="dialog__head">
+      <div class="dialog__title" id="title">Choose an option</div>
+      <div class="dialog__sub truncate" id="name"></div>
+    </div>
+
+    <div class="dialog__body">
+      <div id="choices"></div>
+      <p class="error" id="error"></p>
+    </div>
+
+    <div class="dialog__foot">
+      <span class="spacer"></span>
+      <button class="btn" id="cancel" type="button">Cancel</button>
+    </div>
+
+    <script type="module" src="/src/windows/presets/main.ts"></script>
+  </body>
+</html>

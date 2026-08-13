@@ -57,48 +57,33 @@ Start-Process $exe -ArgumentList "install-menu" -Wait -WindowStyle Hidden
 
 # Walk every verb key we own and collect (extension, label, commandline).
 #
-# The items are NOT under the file class. Explorer only honours ~16 static
-# verbs per class, so the verb we register there carries an
-# `ExtendedSubCommandsKey` pointing at a class of our own — `Zapit.Menu.<ext>`
-# — and presets hang off a further class per action. Both hops have to be
-# followed or this sweep sees an empty menu. See src-tauri/src/registry_menu.rs.
+# Items sit directly under the file-class verb: `…\shell\Zapit` carries
+# `SubCommands=""` plus its own `shell` subkey. That is the ONLY cascading form
+# Explorer honours under SystemFileAssociations — `ExtendedSubCommandsKey` is
+# silently ignored there. Exactly one verb per action and no preset children: a
+# preset used to be a verb too, and Explorer honours only ~16 per class, which
+# truncated the menu after four entries. See src-tauri/src/registry_menu.rs.
 $entries = New-Object System.Collections.Generic.List[object]
 
-function SubCommandsClass($keyPath) {
-    (Get-ItemProperty -LiteralPath $keyPath -ErrorAction SilentlyContinue).ExtendedSubCommandsKey
-}
-
-function CollectClass($class, $extension) {
-    $shellPath = "HKCU:\Software\Classes\$class\shell"
+function CollectVerb($verbPath, $extension) {
+    $shellPath = Join-Path $verbPath "shell"
     foreach ($item in @(Get-ChildItem -LiteralPath $shellPath -ErrorAction SilentlyContinue)) {
         $label = (Get-ItemProperty -LiteralPath $item.PSPath -ErrorAction SilentlyContinue).MUIVerb
-        $presetClass = SubCommandsClass $item.PSPath
-        if ($presetClass) {
-            $presetShell = "HKCU:\Software\Classes\$presetClass\shell"
-            foreach ($choice in @(Get-ChildItem -LiteralPath $presetShell -ErrorAction SilentlyContinue)) {
-                $cmd = (Get-ItemProperty -LiteralPath (Join-Path $choice.PSPath "command") -ErrorAction SilentlyContinue)."(default)"
-                $sub = (Get-ItemProperty -LiteralPath $choice.PSPath -ErrorAction SilentlyContinue).MUIVerb
-                if ($cmd) { $entries.Add([PSCustomObject]@{ Ext = $extension; Label = "$label > $sub"; Cmd = $cmd }) }
-            }
-        } else {
-            $cmd = (Get-ItemProperty -LiteralPath (Join-Path $item.PSPath "command") -ErrorAction SilentlyContinue)."(default)"
-            if ($cmd) { $entries.Add([PSCustomObject]@{ Ext = $extension; Label = $label; Cmd = $cmd }) }
-        }
+        $cmd = (Get-ItemProperty -LiteralPath (Join-Path $item.PSPath "command") -ErrorAction SilentlyContinue)."(default)"
+        if ($cmd) { $entries.Add([PSCustomObject]@{ Ext = $extension; Label = $label; Cmd = $cmd }) }
     }
 }
 
 foreach ($assoc in @(Get-ChildItem "HKCU:\Software\Classes\SystemFileAssociations" -ErrorAction SilentlyContinue)) {
     $verb = Join-Path $assoc.PSPath "shell\Zapit"
     if (-not (Test-Path -LiteralPath $verb)) { continue }
-    $class = SubCommandsClass $verb
-    if ($class) { CollectClass $class ($assoc.PSChildName.TrimStart(".")) }
+    CollectVerb $verb ($assoc.PSChildName.TrimStart("."))
 }
 # `*` is a literal key name here, not a wildcard, hence -LiteralPath throughout.
-$anyVerb = "HKCU:\Software\Classes\*\shell\ZapitAnyFile"
-if (Test-Path -LiteralPath $anyVerb) {
-    $class = SubCommandsClass $anyVerb
-    if ($class) { CollectClass $class "" }
-}
+# Same verb name as the per-extension classes on purpose: Explorer dedupes by
+# key name, and a distinct name puts two "Zapit" entries in the menu.
+$anyVerb = "HKCU:\Software\Classes\*\shell\Zapit"
+if (Test-Path -LiteralPath $anyVerb) { CollectVerb $anyVerb "" }
 
 Write-Host "found $($entries.Count) clickable menu entries`n"
 
