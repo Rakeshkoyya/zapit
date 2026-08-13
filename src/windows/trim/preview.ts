@@ -29,10 +29,19 @@ interface ProgressPayload {
   readonly percent: number;
 }
 
+/**
+ * Addresses a granted file over our own scheme. Tauri's `asset:` protocol
+ * derives Content-Type from the `infer` crate, which labels M4A `audio/m4a` —
+ * a type no browser engine accepts, so m4a would not play while wav did.
+ */
+function mediaUrl(path: string): string {
+  return convertFileSrc(path, "zapitmedia");
+}
+
 /** Allow the file through the (otherwise empty) asset scope, then address it. */
 export async function sourceUrl(path: string): Promise<string> {
   await invoke("preview_allow", { path });
-  return convertFileSrc(path);
+  return mediaUrl(path);
 }
 
 /** Filmstrip and waveform; either may be null when the source lacks that stream. */
@@ -45,8 +54,8 @@ export async function loadAssets(info: SourceInfo): Promise<PreviewAssets> {
     durationS: info.durationS,
   });
   return {
-    filmstrip: raw.filmstrip === null ? null : convertFileSrc(raw.filmstrip),
-    waveform: raw.waveform === null ? null : convertFileSrc(raw.waveform),
+    filmstrip: raw.filmstrip === null ? null : mediaUrl(raw.filmstrip),
+    waveform: raw.waveform === null ? null : mediaUrl(raw.waveform),
   };
 }
 
@@ -72,7 +81,7 @@ export async function buildProxy(
       sourceHeight,
       durationS: info.durationS,
     });
-    return convertFileSrc(path);
+    return mediaUrl(path);
   } finally {
     unlisten();
   }

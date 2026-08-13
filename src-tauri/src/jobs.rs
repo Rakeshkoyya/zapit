@@ -51,6 +51,9 @@ pub struct JobState {
     /// Separate from `cancel_flags`: a Trim window can abandon its proxy build
     /// without cancelling the job that opened it (ADR 005).
     pub preview_cancels: Mutex<HashMap<String, CancelFlag>>,
+    /// Deny-by-default allow-list for `zapitmedia://`. A window may only stream
+    /// files it was explicitly handed.
+    pub allowed_media: Mutex<std::collections::HashSet<PathBuf>>,
     /// `install-menu` waits here for the webview to hand over the action list.
     pub pending_menu: Mutex<Option<mpsc::Sender<Vec<crate::registry_menu::MenuAction>>>>,
 }

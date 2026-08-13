@@ -40,7 +40,7 @@ Works on: mp4, mkv, mov, avi, webm, wmv, flv, ts, m4v, mts, 3gp
 | **Compress video** | Best quality / Balanced / Smaller, or a size target of 15/25/50 MB or your own number. Resolution is always preserved. |
 | **Convert to** | MP4, MKV, WebM or MOV. Copies streams instead of re-encoding whenever the target container allows it, so it's often instant. |
 | **Video → GIF** | Two-pass palette generation for good colours at a sane size. Small / Medium / Large presets. |
-| **Trim** | Start and end times in a small window. Precise by default; a "lossless" checkbox cuts at the nearest keyframe with no re-encode. |
+| **Trim** | A timeline window: watch the clip, drag cut regions over a filmstrip and waveform, and press Play to hear the result before committing. Make as many cuts as you like, then merge them into one file or export each separately. A Keep/Remove toggle covers both "give me these bits" and "cut the ads out". Precise by default; a "lossless" checkbox cuts at the nearest keyframe with no re-encode. |
 | **Merge videos** | Select several → order them → one file. Lossless concat when the clips match, automatic normalisation when they don't. |
 | **Mute video** | Strips the audio track, no re-encode. |
 | **Extract frame** | First frame, middle frame, a 4×4 contact sheet, or any timestamp you type. |
@@ -55,7 +55,7 @@ Works on: mp3, wav, flac, m4a, aac, ogg, opus, wma
 | Action | What it does |
 |---|---|
 | **Convert to** | MP3, WAV, FLAC, M4A or OGG. Says so instead of pointlessly re-encoding when it's already that format. |
-| **Trim** | The "online audio cutter" replacement, sharing the trim window with video. MP3 and FLAC cut without re-encoding. |
+| **Trim** | The "online audio cutter" replacement, sharing the timeline window with video — waveform instead of filmstrip, multiple cuts, merge or export separately. MP3 and FLAC cut without re-encoding. |
 | **Normalize loudness** | Proper two-pass EBU R128 normalisation (broadcast standard), not just a volume bump. |
 | **Merge audio** | Several files → one, in the order you choose. |
 | **Boost volume** | 1.5×, 2× or 3×. |

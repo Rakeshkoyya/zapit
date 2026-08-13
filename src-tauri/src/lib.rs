@@ -12,6 +12,7 @@ pub mod hash;
 pub mod image;
 pub mod jobs;
 pub mod logging;
+pub mod media_protocol;
 pub mod naming;
 pub mod pdf;
 pub mod plan;
@@ -117,6 +118,17 @@ fn run_app(invocation: Invocation) -> ExitCode {
         .plugin(tauri_plugin_opener::init())
         .manage(JobState::default())
         .manage(DispatcherHandle(Mutex::new(Some(tx))))
+        // Our own media scheme (ADR 005): Tauri's asset protocol derives
+        // Content-Type from `infer`, which calls M4A "audio/m4a" — a type no
+        // browser engine knows, so WebView2 refused to play it. Serving the
+        // bytes ourselves is the only way to set the header.
+        .register_asynchronous_uri_scheme_protocol("zapitmedia", |ctx, request, responder| {
+            let app = ctx.app_handle().clone();
+            std::thread::spawn(move || {
+                let state = app.state::<JobState>();
+                responder.respond(media_protocol::respond(&state.allowed_media, &request));
+            });
+        })
         .invoke_handler(tauri::generate_handler![
             webview_ready,
             plan_built,
@@ -583,12 +595,16 @@ fn preview_allow(app: AppHandle, path: String) -> Result<(), error::AppError> {
         .ok_or_else(|| error::AppError::system("could not share the file with the window"))
 }
 
-/// Allow a file through the asset protocol, returning its path on success.
+/// Grant one file to `zapitmedia://`, returning its path on success. The scheme
+/// serves nothing that has not been through here.
 fn share(app: &AppHandle, file: &std::path::Path) -> Option<String> {
-    match app.asset_protocol_scope().allow_file(file) {
-        Ok(()) => Some(file.to_string_lossy().into_owned()),
-        Err(err) => {
-            log::warn!("could not share {}: {err}", file.display());
+    match app.state::<JobState>().allowed_media.lock() {
+        Ok(mut allowed) => {
+            allowed.insert(file.to_path_buf());
+            Some(file.to_string_lossy().into_owned())
+        }
+        Err(_) => {
+            log::warn!("could not share {}: state poisoned", file.display());
             None
         }
     }

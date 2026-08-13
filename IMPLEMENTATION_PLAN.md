@@ -206,7 +206,14 @@ HKCU\...\Zapit\shell\010_extract-audio
     \command  @= "\"<install>\zapit.exe\" run extract-audio --file \"%1\""
 ```
 - Numeric prefixes (`010_`) control ordering; ids after the prefix must match `QuickAction.id`.
-- G1 (checksum) registers under `HKCU\Software\Classes\*\shell\Zapit`.
+- G1 (checksum) registers under `HKCU\Software\Classes\*\shell\`**`ZapitAnyFile`** — a
+  **different key name** from the per-extension `Zapit` verb. Explorer dedupes verbs by key
+  name, so while both were called `Zapit` the any-file flyout shadowed the per-extension one
+  and most video actions never appeared (ADR 005 addendum). Display text is `MUIVerb`, so
+  both still read "Zapit".
+- Any-file actions are *also* written into each extension's own flyout, so a video's menu
+  never depends on two verbs coexisting. `install`/`uninstall` sweep the legacy
+  `*\shell\Zapit` key left by pre-fix builds.
 - `install-menu` writes keys for *enabled* actions only; Settings toggles rewrite them; `uninstall-menu` deletes every key we own and nothing else. Idempotent both ways.
 - Win11: appears under "Show more options" — per GOALS.md non-goals, that is the contract.
 

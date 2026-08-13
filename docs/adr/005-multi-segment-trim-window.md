@@ -67,6 +67,42 @@ the contact-sheet trick from V9) for video, and a `showwavespic` PNG for anythin
 Fixed tile count means the cost does not grow with duration. Both land in
 `%TEMP%\zapit\preview-*`, which the existing `sweep_stale_temp` already collects.
 
+## Addendum (2026-08-13) — `zapitmedia://` replaces the asset protocol
+
+Testing found M4A files would not play in the window while WAV played fine.
+
+Tauri's asset protocol sets Content-Type from `tauri_utils::mime_type::MimeType::parse`,
+which sniffs magic bytes with the `infer` crate. For an M4A, `infer` returns **`audio/m4a`**
+(`infer-0.19.0/src/map.rs:288`) — a string no browser engine recognises. Chromium's media
+pipeline accepts only `audio/mp4` and `audio/x-m4a`, so WebView2 refused the file outright.
+WAV worked because its sniffed type happens to be one Chromium knows. The header is not
+overridable, so the built-in protocol cannot serve this app's own format catalog.
+
+Section 3 above is therefore superseded: the asset protocol is **off** (`protocol-asset`
+feature dropped, `assetProtocol` config removed) and `src-tauri/src/media_protocol.rs`
+registers `zapitmedia://` instead. It maps extension → a MIME type the engine accepts,
+implements HTTP range requests (seeking is the whole point of a trim window) and caps any
+single response at 1 MB so a two-hour film never lands in memory.
+
+The security posture is unchanged in spirit and simpler in practice: instead of an empty
+`FsScope` plus per-file `allow_file` calls, `JobState.allowed_media` is a deny-by-default
+set of granted paths and the handler 403s anything not in it. The CSP drops `asset:` for
+`http://zapitmedia.localhost`.
+
+## Addendum (2026-08-13) — the any-file verb needed its own key name
+
+Most video actions were missing from the right-click menu even though the registry
+contained them. Two verbs applied to the same file and **both were named `Zapit`**:
+`HKCU\…\Classes\*\shell\Zapit` (any-file, holding only Checksum) and
+`HKCU\…\Classes\SystemFileAssociations\.mp4\shell\Zapit` (the ten video actions). Explorer
+dedupes context-menu verbs by key name, so one flyout shadowed the other.
+
+Two changes: the any-file class now writes `ZapitAnyFile` (display text still comes from
+`MUIVerb`, so both read "Zapit"), and any-file actions are additionally folded into every
+extension's own flyout — a video's menu no longer depends on two verbs coexisting.
+`install`/`uninstall` sweep the legacy `*\shell\Zapit` key, which uninstall would otherwise
+never match and which would keep shadowing menus forever.
+
 ## Consequences
 
 - Trim is now the most complex window in the app. It is split into `timeline.ts`, `player.ts`

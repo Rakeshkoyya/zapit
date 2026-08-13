@@ -19,6 +19,12 @@ use winreg::RegKey;
 
 const CLASSES: &str = r"Software\Classes";
 const VERB: &str = "Zapit";
+/// The `*` (any-file) class needs a **different key name** from the
+/// per-extension verb. Explorer dedupes context-menu verbs by key name, so when
+/// both `*\shell\Zapit` and `SystemFileAssociations\.mp4\shell\Zapit` applied to
+/// the same file, one flyout shadowed the other and most video actions never
+/// appeared. Display text comes from MUIVerb, so both still read "Zapit".
+const VERB_ANY: &str = "ZapitAnyFile";
 const MENU_LABEL: &str = "Zapit";
 
 /// One entry inside an action's flyout; `options` become `--opt k=v` on the
@@ -57,10 +63,22 @@ fn command_line(exe: &str, action_id: &str, options: &[(&str, &str)]) -> String 
 
 fn assoc_path(extension: &str) -> String {
     if extension.is_empty() {
-        // The `*` class is the "any file" hook (G1 checksum).
-        format!(r"{CLASSES}\*\shell\{VERB}")
+        // The `*` class is the "any file" hook (G1 checksum), under its own
+        // verb name so it cannot shadow a per-extension flyout.
+        format!(r"{CLASSES}\*\shell\{VERB_ANY}")
     } else {
         format!(r"{CLASSES}\SystemFileAssociations\.{extension}\shell\{VERB}")
+    }
+}
+
+/// Builds before this fix wrote the any-file verb as `*\shell\Zapit`. Uninstall
+/// keys off the current name, so that key would linger forever and keep
+/// shadowing every per-extension menu — sweep it explicitly.
+fn remove_legacy_star_verb() {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let legacy = format!(r"{CLASSES}\*\shell\{VERB}");
+    if hkcu.open_subkey_with_flags(&legacy, KEY_READ).is_ok() {
+        let _ = hkcu.delete_subkey_all(&legacy);
     }
 }
 
@@ -85,6 +103,7 @@ fn parent_chain(extension: &str) -> Vec<String> {
 /// uninstall can remove exactly what we added and nothing else.
 pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
     uninstall_internal(&collect_extensions(actions))?;
+    remove_legacy_star_verb();
 
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let exe_str = exe.to_string_lossy().into_owned();
@@ -106,7 +125,11 @@ pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
                 if extension.is_empty() {
                     a.extensions.is_empty()
                 } else {
-                    a.extensions.contains(&extension)
+                    // Any-file actions (G1 checksum) belong in every flyout too.
+                    // Relying on the `*` verb to supply them meant a video's
+                    // menu depended on two verbs coexisting, which Explorer
+                    // does not allow when they share a key name.
+                    a.extensions.contains(&extension) || a.extensions.is_empty()
                 }
             })
             .collect();
@@ -179,6 +202,7 @@ pub fn install(actions: &[MenuAction], exe: &Path) -> AppResult<()> {
 /// in the config) — never one the user already had.
 pub fn uninstall(extensions: &[String]) -> AppResult<()> {
     uninstall_internal(extensions)?;
+    remove_legacy_star_verb();
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let mut config = crate::config::load();
     // Innermost first: `…\.mp4\shell` must go before `…\.mp4`.
@@ -227,7 +251,12 @@ pub fn is_installed() -> bool {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let star = hkcu
         .open_subkey_with_flags(assoc_path(""), KEY_READ)
-        .is_ok();
+        .is_ok()
+        // A pre-fix install left its any-file verb under the old name; Settings
+        // must still offer "remove" for it.
+        || hkcu
+            .open_subkey_with_flags(format!(r"{CLASSES}\*\shell\{VERB}"), KEY_READ)
+            .is_ok();
     if star {
         return true;
     }
@@ -289,8 +318,19 @@ mod tests {
 
     #[test]
     fn any_file_actions_register_under_the_star_class() {
-        assert!(assoc_path("").contains(r"Classes\*\shell\Zapit"));
+        assert!(assoc_path("").contains(r"Classes\*\shell\ZapitAnyFile"));
         assert!(assoc_path("mp4").contains(r"SystemFileAssociations\.mp4\shell\Zapit"));
+    }
+
+    #[test]
+    fn the_two_verbs_never_share_a_key_name() {
+        // Explorer dedupes verbs by key name: when `*` and the per-extension
+        // class both used "Zapit", one flyout shadowed the other and most
+        // video actions vanished from the menu.
+        let star = assoc_path("");
+        let specific = assoc_path("mp4");
+        let leaf = |path: &str| path.rsplit('\\').next().unwrap_or_default().to_string();
+        assert_ne!(leaf(&star), leaf(&specific));
     }
 
     #[test]
