@@ -15,6 +15,7 @@ pub mod logging;
 pub mod naming;
 pub mod pdf;
 pub mod plan;
+pub mod preview;
 pub mod probe;
 pub mod registry_menu;
 pub mod sidecar;
@@ -127,6 +128,10 @@ fn run_app(invocation: Invocation) -> ExitCode {
             read_file_bytes,
             write_file_bytes,
             read_exif,
+            preview_allow,
+            preview_assets,
+            build_preview_proxy,
+            cancel_preview,
             compare_hash,
             menu_built,
             get_config,
@@ -560,6 +565,151 @@ fn base64_decode(text: &str) -> Option<Vec<u8>> {
 #[tauri::command]
 fn read_exif(path: String) -> Result<Vec<exif::ExifEntry>, error::AppError> {
     exif::read_exif(std::path::Path::new(&path))
+}
+
+// ---- Trim window previews (ADR 005) ----
+
+/// Let the webview stream one specific file over the asset protocol. The static
+/// scope in `tauri.conf.json` is empty, so nothing is readable until a window
+/// asks for a path it was handed in its own URL.
+#[tauri::command]
+fn preview_allow(app: AppHandle, path: String) -> Result<(), error::AppError> {
+    let file = std::path::Path::new(&path);
+    if !file.is_file() {
+        return Err(error::AppError::user(format!("File not found: {path}")));
+    }
+    share(&app, file)
+        .map(|_| ())
+        .ok_or_else(|| error::AppError::system("could not share the file with the window"))
+}
+
+/// Allow a file through the asset protocol, returning its path on success.
+fn share(app: &AppHandle, file: &std::path::Path) -> Option<String> {
+    match app.asset_protocol_scope().allow_file(file) {
+        Ok(()) => Some(file.to_string_lossy().into_owned()),
+        Err(err) => {
+            log::warn!("could not share {}: {err}", file.display());
+            None
+        }
+    }
+}
+
+/// Filmstrip + waveform for the timeline. Either can fail without sinking the
+/// window — they are navigation aids, not the edit itself.
+#[tauri::command]
+async fn preview_assets(
+    app: AppHandle,
+    job_id: String,
+    path: String,
+    has_video: bool,
+    has_audio: bool,
+    duration_s: f64,
+) -> Result<preview::PreviewAssets, error::AppError> {
+    let handle = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let sidecars = jobs::sidecar_dir(&handle)?;
+        let dir = preview::preview_dir(&job_id);
+        std::fs::create_dir_all(&dir)?;
+        let src = std::path::Path::new(&path);
+        let mut assets = preview::PreviewAssets::default();
+        if has_video && duration_s > 0.0 {
+            let out = dir.join("strip.png");
+            match preview::filmstrip(&sidecars, src, &out, duration_s) {
+                Ok(()) => assets.filmstrip = share(&handle, &out),
+                Err(err) => log::info!("filmstrip unavailable: {err}"),
+            }
+        }
+        if has_audio {
+            let out = dir.join("wave.png");
+            match preview::waveform(&sidecars, src, &out) {
+                Ok(()) => assets.waveform = share(&handle, &out),
+                Err(err) => log::info!("waveform unavailable: {err}"),
+            }
+        }
+        Ok(assets)
+    })
+    .await
+    .map_err(|e| error::AppError::system(format!("preview task failed: {e}")))?
+}
+
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct PreviewProgress<'a> {
+    job_id: &'a str,
+    percent: u8,
+}
+
+/// Transcode a low-res stand-in for containers WebView2 cannot decode. Reported
+/// through `preview://progress` and abandonable via `cancel_preview`.
+#[tauri::command]
+async fn build_preview_proxy(
+    app: AppHandle,
+    job_id: String,
+    path: String,
+    has_video: bool,
+    source_height: Option<u32>,
+    duration_s: f64,
+) -> Result<String, error::AppError> {
+    let cancel = sidecar::CancelFlag::default();
+    if let Ok(mut flags) = app.state::<JobState>().preview_cancels.lock() {
+        flags.insert(job_id.clone(), cancel.clone());
+    }
+    let handle = app.clone();
+    let id = job_id.clone();
+    let outcome = tauri::async_runtime::spawn_blocking(move || {
+        let sidecars = jobs::sidecar_dir(&handle)?;
+        let dir = preview::preview_dir(&id);
+        std::fs::create_dir_all(&dir)?;
+        let out = dir.join(preview::proxy_name(has_video));
+        // Truncation and sign loss are both fine: a duration is positive and
+        // far below u64::MAX microseconds.
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let total_us = if duration_s > 0.0 {
+            Some((duration_s * 1_000_000.0) as u64)
+        } else {
+            None
+        };
+        let app_for_progress = handle.clone();
+        let id_for_progress = id.clone();
+        preview::proxy(
+            &sidecars,
+            &preview::ProxySpec {
+                src: std::path::Path::new(&path),
+                out: &out,
+                has_video,
+                source_height,
+                total_us,
+            },
+            &cancel,
+            move |percent| {
+                let _ = app_for_progress.emit(
+                    "preview://progress",
+                    PreviewProgress {
+                        job_id: &id_for_progress,
+                        percent,
+                    },
+                );
+            },
+        )?;
+        share(&handle, &out).ok_or_else(|| error::AppError::system("could not share the preview"))
+    })
+    .await
+    .map_err(|e| error::AppError::system(format!("preview task failed: {e}")))?;
+
+    if let Ok(mut flags) = app.state::<JobState>().preview_cancels.lock() {
+        flags.remove(&job_id);
+    }
+    outcome
+}
+
+/// Abandon an in-flight proxy build without cancelling the job behind it.
+#[tauri::command]
+fn cancel_preview(job_id: String, state: State<JobState>) {
+    if let Ok(flags) = state.preview_cancels.lock() {
+        if let Some(flag) = flags.get(&job_id) {
+            flag.cancel();
+        }
+    }
 }
 
 /// G1's result window compares a pasted hash in constant time.

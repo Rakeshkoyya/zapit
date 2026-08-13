@@ -1,13 +1,16 @@
 import { splitName, type QuickAction } from "../../core/action";
 import { audioStream } from "../../core/media";
 import { PlanError } from "../../core/planError";
-import { resolveTrimRange } from "../shared/trim";
+import { formatSeconds } from "../../core/time";
+import { resolveTrimSelection } from "../shared/trim";
+import { buildSegmentPlan } from "../shared/segmentPlan";
 import type { EnginePlan } from "../../core/plan";
 
 /**
- * A2: the "online audio cutter" replacement, sharing the Trim window with V6.
- * mp3/flac cut with -c copy (frame-accurate enough, §6); other formats
+ * A2: the "online audio cutter" replacement, sharing the timeline window with
+ * V6. mp3/flac cut with -c copy (frame-accurate enough, §6); other formats
  * re-encode in their own codec; wma re-encodes to m4a (no sane wma encoder).
+ * Multiple cuts merge or export separately exactly as for video (ADR 005).
  */
 const REENCODER: Readonly<Record<string, { args: readonly string[]; ext: string }>> = {
   m4a: { args: ["-c:a", "aac", "-b:a", "256k"], ext: "m4a" },
@@ -35,23 +38,26 @@ export const trimAudio: QuickAction = {
     if (input.media && !audioStream(input.media)) {
       throw new PlanError(`"${base}" has no audio.`);
     }
-    const range = resolveTrimRange(input, opts);
-    const copy = range.lossless || ext === "mp3" || ext === "flac";
+    const selection = resolveTrimSelection(input, opts);
+    const copy = selection.lossless || ext === "mp3" || ext === "flac";
     const out = copy
       ? { args: ["-c", "copy"] as readonly string[], ext: ext === "" ? "mp3" : ext }
       : (REENCODER[ext] ?? { args: ["-c:a", "aac", "-b:a", "256k"], ext: "m4a" });
-    const temp = `{tmp}/trimmed.${out.ext}`;
-    const spanUs = Math.round((Number(range.end) - Number(range.start)) * 1_000_000);
-    return {
-      steps: [
-        {
-          kind: "sidecar",
-          bin: "ffmpeg",
-          args: ["-ss", range.start, "-to", range.end, "-i", "{in0}", ...out.args, temp],
-          totalUs: spanUs,
-        },
+    return buildSegmentPlan({
+      segments: selection.segments,
+      merge: selection.merge,
+      base,
+      ext: out.ext,
+      cut: (segment, dest) => [
+        "-ss",
+        formatSeconds(segment.startS),
+        "-to",
+        formatSeconds(segment.endS),
+        "-i",
+        "{in0}",
+        ...out.args,
+        dest,
       ],
-      outputs: [{ from: temp, baseName: `${base} (trimmed)`, ext: out.ext }],
-    };
+    });
   },
 };

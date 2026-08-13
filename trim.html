@@ -9,73 +9,350 @@
         color-scheme: light dark;
         font-family: "Segoe UI", system-ui, sans-serif;
         font-size: 13px;
+        --accent: #4c8dff;
+        --keep: rgba(76, 141, 255, 0.35);
+        --keep-solid: #4c8dff;
+        --remove: rgba(229, 72, 77, 0.35);
+        --remove-solid: #e5484d;
+        --track: rgba(128, 128, 128, 0.16);
       }
       body {
         margin: 0;
-        padding: 14px 18px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 16px 14px;
+        box-sizing: border-box;
         user-select: none;
       }
       #name {
-        margin: 0 0 12px;
+        margin: 0;
         font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      #name span:last-child {
+        font-weight: 400;
+        opacity: 0.7;
+        white-space: nowrap;
+      }
+      #name span:first-child {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .row {
+
+      /* ---- player ---- */
+      #stage {
+        flex: 1 1 auto;
+        min-height: 140px;
+        position: relative;
+        background: #000;
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #media {
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+      }
+      #media.audio-only {
+        height: 0;
+      }
+      #stage-message {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-align: center;
+        color: #ddd;
+        padding: 16px;
+      }
+      #stage-message[hidden] {
+        display: none;
+      }
+      #stage-note {
+        max-width: 34em;
+        opacity: 0.85;
+        line-height: 1.5;
+        margin: 0;
+      }
+      #proxy-bar {
+        width: 220px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.2);
+        overflow: hidden;
+      }
+      #proxy-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+      }
+
+      /* ---- transport ---- */
+      #transport {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #clock {
+        font-variant-numeric: tabular-nums;
+        opacity: 0.8;
+      }
+      .spacer {
+        flex: 1;
+      }
+      .seg-toggle {
+        display: inline-flex;
+        border: 1px solid rgba(128, 128, 128, 0.45);
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .seg-toggle button {
+        border: 0;
+        padding: 4px 12px;
+        font: inherit;
+        background: transparent;
+        cursor: pointer;
+      }
+      .seg-toggle button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      /* ---- timeline ---- */
+      #timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #track {
+        position: relative;
+        height: 74px;
+        border-radius: 5px;
+        background: var(--track);
+        cursor: crosshair;
+        touch-action: none;
+        overflow: hidden;
+      }
+      #strip,
+      #wave {
+        position: absolute;
+        inset: 0;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        pointer-events: none;
+      }
+      #wave {
+        opacity: 0.55;
+      }
+      #regions {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .region {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        background: var(--keep);
+        border: 1px solid var(--keep-solid);
+        border-radius: 3px;
+        box-sizing: border-box;
+        pointer-events: auto;
+        cursor: grab;
+      }
+      body[data-region-mode="remove"] .region {
+        background: var(--remove);
+        border-color: var(--remove-solid);
+      }
+      .region.selected {
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) inset;
+      }
+      .region-label {
+        position: absolute;
+        top: 2px;
+        left: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+      }
+      .handle {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 9px;
+        cursor: ew-resize;
+        background: var(--keep-solid);
+        opacity: 0.9;
+      }
+      body[data-region-mode="remove"] .handle {
+        background: var(--remove-solid);
+      }
+      .handle-start {
+        left: -1px;
+        border-radius: 3px 0 0 3px;
+      }
+      .handle-end {
+        right: -1px;
+        border-radius: 0 3px 3px 0;
+      }
+      #playhead {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        margin-left: -1px;
+        background: #fff;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+      }
+      #ruler {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        opacity: 0.6;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---- cut list ---- */
+      #cuts {
+        max-height: 84px;
+        overflow-y: auto;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      #cuts li {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 10px;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-variant-numeric: tabular-nums;
+        cursor: pointer;
+      }
+      #cuts li.selected {
+        background: rgba(128, 128, 128, 0.18);
+      }
+      #cuts .index {
+        width: 1.4em;
+        opacity: 0.6;
+      }
+      #cuts .drop {
+        margin-left: auto;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        cursor: pointer;
+        opacity: 0.7;
+        padding: 0 6px;
+      }
+      #empty {
+        opacity: 0.7;
+        margin: 0;
+      }
+
+      /* ---- footer ---- */
+      #options {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
       }
       label {
-        width: 42px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
       }
-      input[type="text"] {
-        font: inherit;
-        width: 90px;
-        padding: 3px 6px;
+      #footer {
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
-      #hint,
-      #error {
-        font-size: 12px;
+      #summary {
         opacity: 0.8;
-        margin: 0 0 10px;
       }
       #error {
         color: #e5484d;
-        opacity: 1;
-      }
-      #buttons {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 14px;
       }
       button {
         font: inherit;
         padding: 4px 16px;
       }
+      #go {
+        font-weight: 600;
+      }
     </style>
   </head>
-  <body>
-    <p id="name"></p>
-    <div class="row">
-      <label for="start">Start</label>
-      <input id="start" type="text" placeholder="0:00" />
-      <label for="end" style="width: auto">End</label>
-      <input id="end" type="text" placeholder="0:30" />
+  <body data-region-mode="keep">
+    <p id="name"><span id="file-name"></span><span id="duration"></span></p>
+
+    <div id="stage">
+      <video id="media" preload="metadata" playsinline></video>
+      <div id="stage-message" hidden>
+        <p id="stage-note"></p>
+        <button id="build-preview" type="button" hidden>Build preview</button>
+        <div id="proxy-bar" hidden><div id="proxy-fill"></div></div>
+        <button id="cancel-preview" type="button" hidden>Cancel</button>
+      </div>
     </div>
-    <div class="row">
-      <input id="lossless" type="checkbox" />
-      <label for="lossless" style="width: auto">Lossless (cuts at the nearest keyframe)</label>
+
+    <div id="transport">
+      <button id="play" type="button">▶ Play cut</button>
+      <span id="clock">0:00.0</span>
+      <span class="spacer"></span>
+      <span class="seg-toggle">
+        <button id="mode-keep" type="button" aria-pressed="true">Keep</button>
+        <button id="mode-remove" type="button" aria-pressed="false">Remove</button>
+      </span>
+      <button id="add-cut" type="button">+ Add cut</button>
     </div>
-    <p id="hint"></p>
-    <p id="error" hidden></p>
-    <div id="buttons">
+
+    <div id="timeline">
+      <div id="track">
+        <div id="strip"></div>
+        <div id="wave"></div>
+        <div id="regions"></div>
+        <div id="playhead"></div>
+      </div>
+      <div id="ruler"></div>
+    </div>
+
+    <ul id="cuts"></ul>
+    <p id="empty" hidden></p>
+
+    <div id="options">
+      <label
+        ><input id="lossless" type="checkbox" /> Lossless (approximate — cuts at the nearest
+        keyframe)</label
+      >
+      <label><input id="merge" type="checkbox" checked /> Merge cuts into one file</label>
+    </div>
+
+    <div id="footer">
+      <span id="summary"></span>
+      <span id="error"></span>
+      <span class="spacer"></span>
       <button id="cancel" type="button">Cancel</button>
       <button id="go" type="button">Trim</button>
     </div>
+
     <script type="module" src="/src/windows/trim/main.ts"></script>
   </body>
 </html>

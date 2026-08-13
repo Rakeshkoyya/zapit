@@ -21,6 +21,9 @@ Last automated run: **2026-07-25**, all green (`smoke.ps1` 40 cases + `-Heavy` 9
 | V4 convert-video | `v4-convert-mkv` | remux fast path (stream copy) |
 | V5 video-to-gif | `v5-gif` | two-pass palettegen |
 | V6 trim-video | `v6-trim` | precise re-encode path |
+| V6 trim-video (multi) | `v6-trim-multi` | two cuts joined by the concat demuxer (ADR 005) |
+| V6 trim-video (separate) | `v6-trim-separate` | two cuts → `(clip 1)` / `(clip 2)` |
+| V6 trim-video (lossless multi) | `v6-trim-multi-lossless` | stream-copy cuts concatenated; lands on keyframes |
 | V7 merge-videos | `v7-merge-uniform` | concat-demuxer path (unit test covers the filter fallback) |
 | V8 mute-video | `v8-mute` | unit test covers the no-audio refusal |
 | V9 extract-frame | `v9-frame`, `v9-sheet` | single frame + 4×4 contact sheet |
@@ -29,6 +32,7 @@ Last automated run: **2026-07-25**, all green (`smoke.ps1` 40 cases + `-Heavy` 9
 | V12 gif-to-video | `v12-gif-to-mp4` | odd-dimension GIF → even-dimension yuv420p |
 | A1 convert-audio | `a1-convert-wav` | unit test covers the same-format refusal |
 | A2 trim-audio | `a2-trim-copy` | mp3 stream-copy cut |
+| A2 trim-audio (multi) | `a2-trim-multi` | two mp3 cuts joined by the concat demuxer |
 | A3 normalize-audio | `a3-normalize` | two-pass loudnorm JSON round-trip |
 | A4 merge-audio | `a4-merge-audio` | mixed codecs (mp3 + flac) → filter path |
 | A5 boost-volume | `a5-boost` | unit tests cover factor validation |

@@ -1,0 +1,50 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-ss", "1", "-to", "2", "-i", "{in0}",
+        "-c:v", "libopenh264",
+        "-b:v", "9331k",
+        "-maxrate", "10731k",
+        "-bufsize", "18662k",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "{tmp}/seg-0.mp4"
+      ],
+      "totalUs": 1000000
+    },
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-ss", "3", "-to", "4", "-i", "{in0}",
+        "-c:v", "libopenh264",
+        "-b:v", "9331k",
+        "-maxrate", "10731k",
+        "-bufsize", "18662k",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "{tmp}/seg-1.mp4"
+      ],
+      "totalUs": 1000000
+    },
+    {
+      "kind": "write-text",
+      "path": "{tmp}/list.txt",
+      "content": "file 'seg-0.mp4'\nfile 'seg-1.mp4'"
+    },
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-f", "concat", "-safe", "0", "-i", "{tmp}/list.txt",
+        "-c", "copy",
+        "{tmp}/trimmed.mp4"
+      ],
+      "totalUs": 2000000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/trimmed.mp4", "baseName": "video (trimmed)", "ext": "mp4" }]
+}

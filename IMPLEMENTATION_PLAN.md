@@ -5,7 +5,13 @@
 > Work milestone by milestone (§10). Do not skip ahead. Update the checkboxes in §10 as tasks complete.
 > If reality forces a deviation from this plan, write an ADR in `docs/adr/` explaining why, *then* deviate.
 
-Last updated: 2026-07-25 · Status: **M7 packaging done + §7.3 preset submenus implemented** — remaining for `v1.0`: the clean-machine DoD pass, then optional Stretch picks
+Last updated: 2026-08-13 · Status: **M7 packaging done + §7.3 preset submenus + the V6/A2 multi-cut timeline window (ADR 005)** — remaining for `v1.0`: the clean-machine DoD pass, then optional Stretch picks
+
+> **Trim rebuild (2026-08-13, ADR 005):** V6/A2 grew from two text boxes into a timeline
+> editor — preview player, filmstrip + waveform, multiple cut regions, Keep/Remove, and a
+> merge-or-export-separately choice. `GOALS.md` was amended first (v1.2). The asset protocol
+> is now enabled (empty static scope; the file under edit is allowed per window) so the
+> webview can stream media, and `gather_options` gained a per-window size table.
 
 > **§7.3 follow-up (2026-07-25):** preset submenus and the declarative `optionsUI` (§5.1)
 > were missing from the first M6 build, so every action got a single flat menu entry and
@@ -208,7 +214,7 @@ HKCU\...\Zapit\shell\010_extract-audio
 | Window | Used by | Contents |
 |---|---|---|
 | Progress | every job > ~1 s | filename, action, progress bar, cancel. Auto-close on success → toast |
-| Trim | V6, A2 | start/end fields + slider, duration from probe, "lossless (nearest keyframe)" checkbox |
+| Trim | V6, A2 | timeline editor (ADR 005): preview player, filmstrip + waveform track, drag-placed cut regions, Keep/Remove toggle, merge-or-separate checkbox, "lossless (nearest keyframe)" checkbox. The one window that is not tiny — 900×660, resizable |
 | Reorder | P1, I5, V7, A4 | file list, up/down/drag, remove, Go |
 | Prompt | I2, I3, P2, P3… | one labeled input (target KB, page range, dimensions) with validation + presets |
 | Settings | — | action toggles per category, output policy, install/remove menu, license key entry (Pro), third-party licenses, log folder link |
@@ -245,7 +251,7 @@ probe first when the plan branches. These are the *reference* techniques — pla
 - **V3 compress:** target-size math: `video_kbps = (targetMB·8192 / duration_s)·0.97 − audio_kbps` (audio 128k, or 96k if budget tight; below floor of ~150 video kbps → auto-downscale 1080→720→480 and warn). Two-pass x264: pass1 `-c:v libx264 -b:v Xk -preset medium -pass 1 -an -f null NUL`, pass2 with audio. Quality presets = single-pass CRF 20/26/32.
 - **V4 convert:** container+codec matrix: mp4→x264+aac · mkv→copy-if-possible-else-x264 · webm→libvpx-vp9 `-crf 32 -b:v 0`+libopus · mov→x264+aac. Copy streams when already compatible (mkv→mp4 with h264 = remux, seconds).
 - **V5 gif:** two-pass: `[pass1] -vf fps=15,scale=min(480\,iw):-2:flags=lanczos,palettegen=stats_mode=diff palette.png` `[pass2] … paletteuse=dither=bayer:bayer_scale=4`. Options window: fps 10/15/24, width 320/480/640.
-- **V6 trim:** default precise: `-ss S -to E -i-order-matters` re-encode x264 CRF 18 + aac 192k. "Lossless" checkbox: `-ss S -to E -c copy` + info note "cuts at nearest keyframe". Validate 0 ≤ S < E ≤ duration.
+- **V6 trim:** default precise: `-ss S -to E -i-order-matters` re-encode (OpenH264 per ADR 002) + aac 192k. "Lossless" checkbox: `-ss S -to E -c copy` + info note "cuts at nearest keyframe". Ranges are clamped to the duration, not rejected. **Multi-cut (ADR 005):** the window submits `segments="1.5-3.2,10-12.75"` plus `mode=merge|separate`; N cuts become N fast-seeking steps, then either a concat-demuxer join (`write-text` list of *bare relative* names + `-f concat -safe 0 -c copy`) or N separate outputs named `(clip 1)`, `(clip 2)`. One cut emits the pre-ADR-005 plan byte-for-byte. Legacy `start`/`end` still accepted.
 - **V7 merge:** probe all; identical codec/resolution/fps → concat demuxer `-f concat -safe 0 -i list.txt -c copy`. Else normalize each to x264/aac at max common resolution, then concat. List file entries escaped (`'` → `'\''`).
 - **V8 mute:** `-c copy -an`.
 - **V9 frame/sheet:** frame: `-ss T -frames:v 1 -q:v 2 OUT.png`. Contact sheet: N=16 timestamps at `duration·(i+0.5)/16` via `select`, `-vf scale=320:-2,tile=4x4`.
@@ -256,7 +262,7 @@ probe first when the plan branches. These are the *reference* techniques — pla
 
 ### Audio
 - **A1 convert:** mp3→libmp3lame `-q:a 2` · wav→pcm_s16le · flac→flac · m4a→aac `-b:a 256k` · ogg→libvorbis `-q:a 6`. Same-codec (mp3→mp3) = UserError "already MP3".
-- **A2 trim:** shares Trim window; precise `-ss/-to` re-encode in source codec, or copy for mp3/flac (frame-accurate enough).
+- **A2 trim:** shares the Trim timeline window (waveform, no filmstrip); precise `-ss/-to` re-encode in source codec, or copy for mp3/flac (frame-accurate enough). Multi-cut merge/separate works exactly as for V6 (ADR 005).
 - **A3 normalize:** two-pass loudnorm: pass1 `-af loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json -f null NUL`, parse JSON from stderr, pass2 with `measured_*` values.
 - **A4 merge:** concat demuxer if same codec/params, else decode-concat via `concat` filter → encode to first file's format.
 - **A5 boost:** `-af volume=1.5` / `2.0`.

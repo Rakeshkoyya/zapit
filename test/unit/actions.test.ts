@@ -153,3 +153,70 @@ describe("plan guards", () => {
     expect(args).toContain("5.024");
   });
 });
+
+describe("multi-cut trim (ADR 005)", () => {
+  it("V6 merges several cuts through the concat demuxer", () => {
+    expect(trimVideo.buildPlan([MKV], { segments: "1-2,3-4" })).toEqual(golden("trim-video-multi"));
+  });
+
+  it("V6 writes one file per cut in separate mode", () => {
+    expect(trimVideo.buildPlan([MKV], { segments: "1-2,3-4", mode: "separate" })).toEqual(
+      golden("trim-video-separate"),
+    );
+  });
+
+  it("A2 merges cuts with stream copy on mp3", () => {
+    expect(trimAudio.buildPlan([TONE], { segments: "0.2-0.5,1-1.5" })).toEqual(
+      golden("trim-audio-multi"),
+    );
+  });
+
+  it("a single cut still produces the pre-ADR-005 plan", () => {
+    // The concat machinery must not leak into the common one-cut case.
+    expect(trimVideo.buildPlan([MKV], { segments: "1-3" })).toEqual(golden("trim-video"));
+    expect(trimAudio.buildPlan([TONE], { segments: "0.5-1.5" })).toEqual(golden("trim-audio"));
+  });
+
+  it("separate mode with one cut is still named (trimmed), not (clip 1)", () => {
+    const plan = trimVideo.buildPlan([MKV], { segments: "1-3", mode: "separate" });
+    expect(plan.outputs).toEqual([
+      { from: "{tmp}/trimmed.mp4", baseName: "video (trimmed)", ext: "mp4" },
+    ]);
+  });
+
+  it("the concat list uses bare names so a quoted temp path cannot break it", () => {
+    const plan = trimVideo.buildPlan([MKV], { segments: "1-2,3-4" });
+    const list = plan.steps.find((s) => s.kind === "write-text");
+    expect(list?.kind === "write-text" ? list.content : "").not.toContain("{tmp}");
+  });
+
+  it("overlapping cuts collapse into one clip", () => {
+    const plan = trimVideo.buildPlan([MKV], { segments: "1-3,2-4" });
+    // One fused 1-4 cut means no concat step at all.
+    expect(plan.steps).toHaveLength(1);
+    expect(plan.outputs).toHaveLength(1);
+  });
+
+  it("lossless multi-cut copies streams and keeps the source container", () => {
+    const plan = trimVideo.buildPlan([MKV], { segments: "1-2,3-4", lossless: "true" });
+    const first = plan.steps[0];
+    expect(first?.kind === "sidecar" ? first.args : []).toContain("copy");
+    expect(plan.outputs[0]?.ext).toBe("mkv");
+  });
+
+  it("cuts past the end of the file are clamped away, not silently kept", () => {
+    const plan = trimVideo.buildPlan([MKV], { segments: "1-2,90-120" });
+    expect(plan.outputs).toEqual([
+      { from: "{tmp}/trimmed.mp4", baseName: "video (trimmed)", ext: "mp4" },
+    ]);
+    expect(plan.steps).toHaveLength(1);
+  });
+
+  it("rejects malformed and empty selections with a readable message", () => {
+    expect(() => trimVideo.buildPlan([MKV], { segments: "banana" })).toThrow(PlanError);
+    expect(() => trimVideo.buildPlan([MKV], { segments: "90-120" })).toThrow(/past the end/);
+    expect(() => trimVideo.buildPlan([MKV], { segments: "1-2", mode: "sideways" })).toThrow(
+      PlanError,
+    );
+  });
+});

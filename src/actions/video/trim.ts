@@ -1,14 +1,17 @@
 import { splitName, type QuickAction } from "../../core/action";
 import { PlanError } from "../../core/planError";
 import { videoStream } from "../../core/media";
+import { formatSeconds } from "../../core/time";
 import { qualityKbps } from "../../core/videoMath";
-import { resolveTrimRange } from "../shared/trim";
+import { resolveTrimSelection } from "../shared/trim";
+import { buildSegmentPlan } from "../shared/segmentPlan";
 import { h264EncodeArgs } from "../shared/h264";
 import type { EnginePlan } from "../../core/plan";
 
 /**
  * V6: precise re-encode by default (frame-accurate); "lossless" copies streams
- * and cuts at the nearest keyframe.
+ * and cuts at the nearest keyframe. Multiple cuts merge through the concat
+ * demuxer or come out as separate clips (ADR 005).
  */
 export const trimVideo: QuickAction = {
   id: "trim-video",
@@ -27,31 +30,36 @@ export const trimVideo: QuickAction = {
     if (!videoStream(input.media)) {
       throw new PlanError(`"${base}" doesn't look like a video.`);
     }
-    const range = resolveTrimRange(input, opts);
-    const outExt = range.lossless ? (ext === "" ? "mp4" : ext) : "mp4";
-    const temp = `{tmp}/trimmed.${outExt}`;
-    const spanUs = Math.round((Number(range.end) - Number(range.start)) * 1_000_000);
+    const selection = resolveTrimSelection(input, opts);
+    const outExt = selection.lossless ? (ext === "" ? "mp4" : ext) : "mp4";
     const video = videoStream(input.media);
     // 0.15 bpp ≈ visually transparent for h264 (ADR 002: no CRF in OpenH264).
-    const args = range.lossless
-      ? ["-ss", range.start, "-to", range.end, "-i", "{in0}", "-c", "copy", temp]
+    // Every segment shares these args, which is what lets the concat demuxer
+    // stitch them without a re-encode.
+    const encode = selection.lossless
+      ? ["-c", "copy"]
       : [
-          "-ss",
-          range.start,
-          "-to",
-          range.end,
-          "-i",
-          "{in0}",
           ...h264EncodeArgs(qualityKbps(0.15, video?.width, video?.height)),
           "-c:a",
           "aac",
           "-b:a",
           "192k",
-          temp,
         ];
-    return {
-      steps: [{ kind: "sidecar", bin: "ffmpeg", args, totalUs: spanUs }],
-      outputs: [{ from: temp, baseName: `${base} (trimmed)`, ext: outExt }],
-    };
+    return buildSegmentPlan({
+      segments: selection.segments,
+      merge: selection.merge,
+      base,
+      ext: outExt,
+      cut: (segment, out) => [
+        "-ss",
+        formatSeconds(segment.startS),
+        "-to",
+        formatSeconds(segment.endS),
+        "-i",
+        "{in0}",
+        ...encode,
+        out,
+      ],
+    });
   },
 };

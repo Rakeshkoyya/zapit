@@ -27,6 +27,19 @@ impl MediaInfo {
     pub fn has_audio(&self) -> bool {
         self.streams.iter().any(|s| s.kind == "audio")
     }
+
+    pub fn has_video(&self) -> bool {
+        self.streams.iter().any(|s| s.kind == "video")
+    }
+
+    /// Height of the first video stream — the Trim proxy only ever downscales,
+    /// so it needs to know whether there is anything to downscale (ADR 005).
+    pub fn video_height(&self) -> Option<u32> {
+        self.streams
+            .iter()
+            .find(|s| s.kind == "video")
+            .and_then(|s| s.height)
+    }
 }
 
 // ffprobe's raw JSON shape (only the fields we read).

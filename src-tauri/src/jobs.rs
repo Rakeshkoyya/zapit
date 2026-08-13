@@ -48,6 +48,9 @@ pub struct JobState {
     pub pending_options: Mutex<HashMap<String, mpsc::Sender<OptionsReply>>>,
     pub pending_js: Mutex<HashMap<String, mpsc::Sender<JsReply>>>,
     pub cancel_flags: Mutex<HashMap<String, CancelFlag>>,
+    /// Separate from `cancel_flags`: a Trim window can abandon its proxy build
+    /// without cancelling the job that opened it (ADR 005).
+    pub preview_cancels: Mutex<HashMap<String, CancelFlag>>,
     /// `install-menu` waits here for the webview to hand over the action list.
     pub pending_menu: Mutex<Option<mpsc::Sender<Vec<crate::registry_menu::MenuAction>>>>,
 }
@@ -222,11 +225,12 @@ fn gather_options(
         pending.insert(job_id.to_string(), tx);
     }
 
-    let duration = inputs
-        .first()
-        .and_then(|i| i.media.as_ref())
-        .and_then(|m| m.duration_s)
-        .unwrap_or(0.0);
+    let media = inputs.first().and_then(|i| i.media.as_ref());
+    let duration = media.and_then(|m| m.duration_s).unwrap_or(0.0);
+    // The Trim window branches on these: filmstrip needs video, waveform needs
+    // audio, and an audio-only proxy skips the encoder entirely (ADR 005).
+    let has_video = media.is_some_and(crate::probe::MediaInfo::has_video);
+    let has_audio = media.is_some_and(crate::probe::MediaInfo::has_audio);
     let file = inputs.first().map(|i| i.path.as_str()).unwrap_or("");
     let file_name = file.rsplit(['\\', '/']).next().unwrap_or(file);
     // Reorder-style windows need every file name, not just the first.
@@ -238,24 +242,30 @@ fn gather_options(
     let label = format!("options-{job_id}");
     // `path` lets a window fetch its own data (I6 reads EXIF directly).
     let url = format!(
-        "{window}.html?job={job_id}&duration={duration}&name={}&files={}&path={}",
+        "{window}.html?job={job_id}&duration={duration}&hasVideo={}&hasAudio={}&name={}&files={}&path={}",
+        u8::from(has_video),
+        u8::from(has_audio),
         urlencoded(file_name),
         urlencoded(&files_json),
         urlencoded(file)
     );
+    let size = window_size(window);
     let app_on_main = app.clone();
     let label_on_main = label.clone();
     let _ = app.run_on_main_thread(move || {
-        let _ = tauri::WebviewWindowBuilder::new(
+        let mut builder = tauri::WebviewWindowBuilder::new(
             &app_on_main,
             &label_on_main,
             tauri::WebviewUrl::App(url.into()),
         )
         .title("Zapit")
-        .inner_size(420.0, 240.0)
-        .resizable(false)
-        .maximizable(false)
-        .build();
+        .inner_size(size.width, size.height)
+        .resizable(size.resizable)
+        .maximizable(size.resizable);
+        if size.resizable {
+            builder = builder.min_inner_size(720.0, 520.0);
+        }
+        let _ = builder.build();
     });
 
     // No timeout: the user may be thinking. Closing the window sends None.
@@ -270,6 +280,29 @@ fn gather_options(
         let _ = w.close();
     }
     received
+}
+
+struct WindowSize {
+    width: f64,
+    height: f64,
+    resizable: bool,
+}
+
+/// Prompt windows are fixed-size dialogs. Trim is a real editor — a player, a
+/// filmstrip and a segment list do not fit in a 420×240 box (ADR 005).
+fn window_size(window: &str) -> WindowSize {
+    match window {
+        "trim" => WindowSize {
+            width: 900.0,
+            height: 660.0,
+            resizable: true,
+        },
+        _ => WindowSize {
+            width: 420.0,
+            height: 240.0,
+            resizable: false,
+        },
+    }
 }
 
 /// Result windows (G1 hash) display data and stay open until dismissed; the

@@ -75,8 +75,13 @@ Invoke-Smoke "v3-compress-quality" @("smoke", "compress-video", "--file", "`"$ti
 Invoke-Smoke "v4-convert-mkv" @("smoke", "convert-video", "--file", "`"$tiny`"", "--opt", "target=mkv") @("tiny.mkv")
 Invoke-Smoke "v5-gif" @("smoke", "video-to-gif", "--file", "`"$tiny`"", "--opt", "fps=10", "--opt", "width=320") @("tiny.gif")
 Invoke-Smoke "v6-trim" @("smoke", "trim-video", "--file", "`"$tiny`"", "--opt", "start=1", "--opt", "end=3") @("tiny (trimmed).mp4")
+# Multi-cut (ADR 005): the concat demuxer path, in both export modes and lossless.
+Invoke-Smoke "v6-trim-multi" @("smoke", "trim-video", "--file", "`"$tiny`"", "--opt", "segments=0.5-1.5,3-4") @("tiny (trimmed).mp4")
+Invoke-Smoke "v6-trim-separate" @("smoke", "trim-video", "--file", "`"$tiny`"", "--opt", "segments=0.5-1.5,3-4", "--opt", "mode=separate") @("tiny (clip 1).mp4", "tiny (clip 2).mp4")
+Invoke-Smoke "v6-trim-multi-lossless" @("smoke", "trim-video", "--file", "`"$tiny`"", "--opt", "segments=0.5-1.5,3-4", "--opt", "lossless=true") @("tiny (trimmed).mp4")
 Invoke-Smoke "a1-convert-wav" @("smoke", "convert-audio", "--file", "`"$tone`"", "--opt", "target=wav") @("tone.wav")
 Invoke-Smoke "a2-trim-copy" @("smoke", "trim-audio", "--file", "`"$tone`"", "--opt", "start=0.5", "--opt", "end=1.5") @("tone (trimmed).mp3")
+Invoke-Smoke "a2-trim-multi" @("smoke", "trim-audio", "--file", "`"$tone`"", "--opt", "segments=0.2-0.5,1-1.5") @("tone (trimmed).mp3")
 
 # --- image suite (M3) ---
 $photo = Join-Path $assets "photo.jpg"

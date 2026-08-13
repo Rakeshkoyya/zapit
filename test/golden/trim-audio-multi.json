@@ -1,0 +1,32 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": ["-ss", "0.2", "-to", "0.5", "-i", "{in0}", "-c", "copy", "{tmp}/seg-0.mp3"],
+      "totalUs": 300000
+    },
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": ["-ss", "1", "-to", "1.5", "-i", "{in0}", "-c", "copy", "{tmp}/seg-1.mp3"],
+      "totalUs": 500000
+    },
+    {
+      "kind": "write-text",
+      "path": "{tmp}/list.txt",
+      "content": "file 'seg-0.mp3'\nfile 'seg-1.mp3'"
+    },
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-f", "concat", "-safe", "0", "-i", "{tmp}/list.txt",
+        "-c", "copy",
+        "{tmp}/trimmed.mp3"
+      ],
+      "totalUs": 800000
+    }
+  ],
+  "outputs": [{ "from": "{tmp}/trimmed.mp3", "baseName": "tone (trimmed)", "ext": "mp3" }]
+}

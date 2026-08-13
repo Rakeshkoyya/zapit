@@ -14,7 +14,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# protocol-asset: the Trim window streams the file under edit into a <video>
+# element (ADR 005). Enabling assetProtocol in tauri.conf.json selects this
+# feature implicitly; pinning it here keeps the dependency readable on its own.
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-single-instance = "2"
 tauri-plugin-cli = "2"
 tauri-plugin-shell = "2"

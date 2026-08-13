@@ -1,0 +1,38 @@
+{
+  "steps": [
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-ss", "1", "-to", "2", "-i", "{in0}",
+        "-c:v", "libopenh264",
+        "-b:v", "9331k",
+        "-maxrate", "10731k",
+        "-bufsize", "18662k",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "{tmp}/clip-0.mp4"
+      ],
+      "totalUs": 1000000
+    },
+    {
+      "kind": "sidecar",
+      "bin": "ffmpeg",
+      "args": [
+        "-ss", "3", "-to", "4", "-i", "{in0}",
+        "-c:v", "libopenh264",
+        "-b:v", "9331k",
+        "-maxrate", "10731k",
+        "-bufsize", "18662k",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        "{tmp}/clip-1.mp4"
+      ],
+      "totalUs": 1000000
+    }
+  ],
+  "outputs": [
+    { "from": "{tmp}/clip-0.mp4", "baseName": "video (clip 1)", "ext": "mp4" },
+    { "from": "{tmp}/clip-1.mp4", "baseName": "video (clip 2)", "ext": "mp4" }
+  ]
+}
