@@ -1,6 +1,6 @@
 [package]
 name = "zapit"
-version = "0.1.1"
+version = "1.0.0"
 description = "Right-click any file on Windows and instantly do the obvious thing with it. Offline, private, open source."
 license = "MIT"
 edition = "2021"

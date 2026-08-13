@@ -2,7 +2,7 @@
 
 Everything here is free. No code-signing certificate, no store fees.
 
-The current release is **v0.1.0**. The version appears in three files that must always
+The current release is **v1.0.0**. The version appears in three files that must always
 agree — `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` — and it
 becomes the installer's filename.
 
@@ -33,14 +33,14 @@ Output: `src-tauri/target/release/bundle/nsis/Zapit_<version>_x64-setup.exe`
 Get the checksum to publish alongside it:
 
 ```powershell
-Get-FileHash src-tauri\target\release\bundle\nsis\Zapit_0.1.0_x64-setup.exe -Algorithm SHA256
+Get-FileHash src-tauri\target\release\bundle\nsis\Zapit_1.0.0_x64-setup.exe -Algorithm SHA256
 ```
 
 ## 3. Tag the release
 
 ```powershell
-git tag -a v0.1.0 -m "Zapit v0.1.0 - first public release"
-git push origin v0.1.0
+git tag -a v1.0.0 -m "Zapit v1.0.0 - first public release"
+git push origin v1.0.0
 ```
 
 A tag is just a pointer; it does **not** create a release or upload anything. That is the
@@ -54,10 +54,10 @@ the repository hosts source.
 ### Option A — GitHub website (no extra tools)
 
 1. Go to `https://github.com/<you>/zapit/releases/new`
-2. **Choose a tag** → pick the existing `v0.1.0`
-3. **Release title**: `Zapit v0.1.0`
+2. **Choose a tag** → pick the existing `v1.0.0`
+3. **Release title**: `Zapit v1.0.0`
 4. Paste the release notes (template below)
-5. Drag `Zapit_0.1.0_x64-setup.exe` into the attachments box and wait for the upload bar
+5. Drag `Zapit_1.0.0_x64-setup.exe` into the attachments box and wait for the upload bar
    to finish
 6. Tick **Set as a pre-release** if you want early testers only; leave it unticked for a
    public release
@@ -75,10 +75,10 @@ Restart the terminal, authenticate, then create the release and upload in one co
 
 ```powershell
 gh auth login
-gh release create v0.1.0 `
-  "src-tauri\target\release\bundle\nsis\Zapit_0.1.0_x64-setup.exe" `
-  --title "Zapit v0.1.0" `
-  --notes-file docs\release-notes-v0.1.0.md
+gh release create v1.0.0 `
+  "src-tauri\target\release\bundle\nsis\Zapit_1.0.0_x64-setup.exe" `
+  --title "Zapit v1.0.0" `
+  --notes-file docs\release-notes-v1.0.0.md
 ```
 
 Use `--prerelease` to mark it as a pre-release.
@@ -91,7 +91,7 @@ video to a size limit, squeeze a photo to an exact KB target, convert HEIC, merg
 PDFs, extract audio. Fully offline: no uploads, no accounts, no telemetry.
 
 ### Install
-Download `Zapit_0.1.0_x64-setup.exe` below and run it. It installs for your user only, needs
+Download `Zapit_1.0.0_x64-setup.exe` below and run it. It installs for your user only, needs
 no admin rights, and adds itself to the right-click menu (under **Show more options**).
 
 ### Heads-up: SmartScreen warning
@@ -102,7 +102,7 @@ what was published:
 SHA-256: `<paste the hash here>`
 
 ```powershell
-Get-FileHash Zapit_0.1.0_x64-setup.exe -Algorithm SHA256
+Get-FileHash Zapit_1.0.0_x64-setup.exe -Algorithm SHA256
 ```
 
 Or build it yourself from source — the instructions are in the README.
@@ -119,7 +119,7 @@ no fee**, and your GitHub release is a valid download source:
 
 ```powershell
 winget install wingetcreate
-wingetcreate new https://github.com/<you>/zapit/releases/download/v0.1.0/Zapit_0.1.0_x64-setup.exe
+wingetcreate new https://github.com/<you>/zapit/releases/download/v1.0.0/Zapit_1.0.0_x64-setup.exe
 ```
 
 It collects the metadata, validates the manifest and opens a pull request against
